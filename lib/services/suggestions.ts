@@ -6,6 +6,7 @@
  * guidance on actual vulnerabilities.
  */
 import { prisma } from "@/lib/db";
+import { sendEmail } from "@/lib/email/mailer";
 import type { ServiceResult } from "./community";
 
 const fail = (status: number, error: string) => ({ ok: false as const, status, error });
@@ -64,7 +65,56 @@ export function validateNewSuggestion(input: unknown): { ok: true; value: NewSug
 
 export async function createSuggestion(authorId: string, input: NewSuggestionInput): Promise<ServiceResult<{ id: string }>> {
   const row = await prisma.suggestion.create({ data: { authorId, ...input } });
+  await notifyAdminsOfSuggestion(row.id, authorId, input);
   return { ok: true, value: { id: row.id } };
+}
+
+/**
+ * Emails every admin (and drops an in-app notification) whenever a member
+ * submits a suggestion, so it doesn't sit unseen until someone happens to
+ * open /admin?section=suggestions. Best-effort: a delivery failure here must
+ * never fail the suggestion submission itself.
+ */
+async function notifyAdminsOfSuggestion(suggestionId: string, authorId: string, input: NewSuggestionInput): Promise<void> {
+  try {
+    const [author, admins] = await Promise.all([
+      prisma.profile.findUnique({ where: { userId: authorId }, select: { displayName: true } }),
+      prisma.user.findMany({ where: { role: "admin", status: "active" }, select: { id: true, email: true } }),
+    ]);
+    if (admins.length === 0) return;
+
+    const authorName = author?.displayName ?? "A member";
+    const isSecurity = input.category === "security";
+    const subject = `${isSecurity ? "[Security] " : ""}New suggestion: ${input.title}`;
+    const text = [
+      `${authorName} submitted a ${input.category} suggestion (priority: ${input.priority}).`,
+      "",
+      input.title,
+      "",
+      input.description,
+      input.relatedPage ? `\nAffected page: ${input.relatedPage}` : "",
+      isSecurity && input.severity ? `\nSeverity: ${input.severity}` : "",
+      isSecurity && input.stepsToReproduce ? `\nSteps to reproduce:\n${input.stepsToReproduce}` : "",
+      `\nReview at /admin?section=suggestions`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    await Promise.all([
+      ...admins.map((admin) => sendEmail({ to: admin.email, subject, text })),
+      prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          type: "suggestion",
+          title: isSecurity ? "🔒 New security suggestion" : "💡 New suggestion",
+          body: `${authorName}: ${input.title}`,
+          href: `/admin?section=suggestions`,
+        })),
+      }),
+    ]);
+  } catch (error) {
+    console.error(`[${suggestionId}] Failed to notify admins of new suggestion:`, error instanceof Error ? error.message : error);
+  }
 }
 
 export async function toggleSuggestionVote(userId: string, suggestionId: string): Promise<ServiceResult<{ voted: boolean; voteCount: number }>> {
