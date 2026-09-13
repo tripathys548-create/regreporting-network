@@ -12,6 +12,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Panel } from "@/components/ui/Panel";
 import { DemoContentLabel, SourceBadge, SourceTypeLabel, TierIndicator } from "@/components/ui/SourceLabels";
 import { EmptyState } from "@/components/ui/States";
+import { DEMO_SECTIONS_ENABLED } from "@/lib/features";
 import { formatDate } from "@/lib/format";
 import { listDiscussionsByTopics } from "@/lib/repositories/community";
 import { listArticles } from "@/lib/repositories/knowledge";
@@ -124,11 +125,13 @@ export default async function UpdateDetailPage({ params }: { params: { id: strin
           </div>
           <p className="mt-2 text-2xs text-muted">Get notified when {source.shortName} publishes a new update.</p>
         </Panel>
-        <Panel title="Research this update" icon="bot">
-          <p className="text-xs text-body">Ask RegBot how this relates to existing requirements. Answers cite their sources.</p>
-          <AskRegBotButton question={`What does "${update.title}" mean for ${update.category.toUpperCase()} reporting?`} className="mt-3" />
-        </Panel>
-        {relatedArticles.length > 0 && (
+        {DEMO_SECTIONS_ENABLED && (
+          <Panel title="Research this update" icon="bot">
+            <p className="text-xs text-body">Ask RegBot how this relates to existing requirements. Answers cite their sources.</p>
+            <AskRegBotButton question={`What does "${update.title}" mean for ${update.category.toUpperCase()} reporting?`} className="mt-3" />
+          </Panel>
+        )}
+        {DEMO_SECTIONS_ENABLED && relatedArticles.length > 0 && (
           <Panel title="Knowledge Base" icon="book" bodyClassName="p-0">
             <ul className="divide-y divide-line">
               {relatedArticles.map((a) => (

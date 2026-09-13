@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/States";
 import { topicLabel } from "@/data/topics";
 import { getSession } from "@/lib/auth/session";
 import { SOURCE_TYPE_ORDER } from "@/lib/constants";
+import { DEMO_SECTIONS_ENABLED } from "@/lib/features";
 import { isWithinDays } from "@/lib/format";
 import { getDailyQuestion } from "@/lib/repositories/challenges";
 import { countActiveDiscussions, listDiscussions, listMostDiscussedThisWeek } from "@/lib/repositories/community";
@@ -79,8 +80,12 @@ export default async function HomePage() {
             <div className="grid grid-cols-2 gap-2">
               <HeroStat icon="radar" value={String(updatesThisWeek)} label="Regulatory updates this week" href="/radar" />
               <HeroStat icon="message" value={String(activeDiscussions)} label="Active discussions (7 days)" href="/community" />
-              <HeroStat icon="calendar" value={String(milestones.length)} label="Upcoming milestones" href="/timeline" />
-              <HeroStat icon="book" value={String(articles.length)} label="Knowledge Base topics" href="/knowledge" />
+              {DEMO_SECTIONS_ENABLED && (
+                <>
+                  <HeroStat icon="calendar" value={String(milestones.length)} label="Upcoming milestones" href="/timeline" />
+                  <HeroStat icon="book" value={String(articles.length)} label="Knowledge Base topics" href="/knowledge" />
+                </>
+              )}
             </div>
             <RegBotQuickAsk />
           </div>
@@ -119,7 +124,7 @@ export default async function HomePage() {
             )}
           </Panel>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className={DEMO_SECTIONS_ENABLED ? "grid grid-cols-1 gap-6 md:grid-cols-2" : undefined}>
             <Panel title="Most Discussed This Week" icon="message" bodyClassName="p-0">
               {mostDiscussed.length === 0 ? (
                 <EmptyState icon="message" title="Quiet week" description="No discussion activity in the last 7 days." className="py-6" />
@@ -131,9 +136,11 @@ export default async function HomePage() {
                 </ul>
               )}
             </Panel>
-            <Panel title="Daily Challenge" icon="trophy" action={{ href: "/challenges", label: "Challenges" }}>
-              <DailyChallengeTeaser prompt={dailyQuestion.prompt} hasScenario={dailyQuestion.scenario !== null} />
-            </Panel>
+            {DEMO_SECTIONS_ENABLED && (
+              <Panel title="Daily Challenge" icon="trophy" action={{ href: "/challenges", label: "Challenges" }}>
+                <DailyChallengeTeaser prompt={dailyQuestion.prompt} hasScenario={dailyQuestion.scenario !== null} />
+              </Panel>
+            )}
           </div>
         </div>
 
@@ -155,26 +162,30 @@ export default async function HomePage() {
             </section>
           )}
 
-          <Panel title="Upcoming Milestones" icon="calendar" action={{ href: "/timeline", label: "Timeline" }} bodyClassName="p-0">
-            <MilestoneList milestones={milestones} compact />
-          </Panel>
+          {DEMO_SECTIONS_ENABLED && (
+            <Panel title="Upcoming Milestones" icon="calendar" action={{ href: "/timeline", label: "Timeline" }} bodyClassName="p-0">
+              <MilestoneList milestones={milestones} compact />
+            </Panel>
+          )}
 
           <Panel title="Most Helpful Contributors" icon="users" bodyClassName="p-0">
             <ContributorList profiles={contributors} />
           </Panel>
 
-          <Panel title="Knowledge Base" icon="book" action={{ href: "/knowledge", label: "Browse" }} bodyClassName="p-3">
-            <ul className="grid gap-1">
-              {articles.slice(0, 8).map((a) => (
-                <li key={a.id}>
-                  <Link href={`/knowledge/${a.slug}`} className="flex items-center justify-between gap-3 rounded border border-line px-2.5 py-1.5 text-xs font-medium text-ink hover:border-accent/40 hover:text-accent">
-                    <span className="truncate">{a.title}</span>
-                    <span className="shrink-0 font-mono text-2xs uppercase text-muted">{topicLabel(a.topic)}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Panel>
+          {DEMO_SECTIONS_ENABLED && (
+            <Panel title="Knowledge Base" icon="book" action={{ href: "/knowledge", label: "Browse" }} bodyClassName="p-3">
+              <ul className="grid gap-1">
+                {articles.slice(0, 8).map((a) => (
+                  <li key={a.id}>
+                    <Link href={`/knowledge/${a.slug}`} className="flex items-center justify-between gap-3 rounded border border-line px-2.5 py-1.5 text-xs font-medium text-ink hover:border-accent/40 hover:text-accent">
+                      <span className="truncate">{a.title}</span>
+                      <span className="shrink-0 font-mono text-2xs uppercase text-muted">{topicLabel(a.topic)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
 
           <Panel title="How to read sources" icon="shield">
             <p className="mb-3 text-xs text-body">Every answer and article states where information comes from. Community opinion is never presented as regulatory fact.</p>

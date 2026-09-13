@@ -12,6 +12,7 @@ import { SOURCES } from "@/data/sources";
 import { TOPICS } from "@/data/topics";
 import { formatDate } from "@/lib/format";
 import type { SearchParams } from "@/lib/params";
+import { DEMO_SECTIONS_ENABLED } from "@/lib/features";
 import { parseSearchFilters, searchContent } from "@/lib/search/search";
 import type { SearchContentType, SearchFilters } from "@/types";
 
@@ -23,6 +24,9 @@ const TYPE_LABEL: Record<SearchContentType, string> = {
   article: "Knowledge Articles",
   document: "Official Documents",
 };
+
+// Articles and documents are sample content, so their tabs are hidden with the demo sections.
+const VISIBLE_TYPES = (Object.keys(TYPE_LABEL) as SearchContentType[]).filter((t) => DEMO_SECTIONS_ENABLED || (t !== "article" && t !== "document"));
 
 const EXAMPLES = ["UTI lifecycle", "validation rejects", "delegated reporting", "LEI lapsed", "ISO 20022"];
 
@@ -60,7 +64,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
 
   return (
     <>
-      <PageHeader eyebrow="Global search" title="Search" description="Search regulatory updates, community discussions, Knowledge Base articles and official source documents." />
+      <PageHeader
+        eyebrow="Global search"
+        title="Search"
+        description={DEMO_SECTIONS_ENABLED ? "Search regulatory updates, community discussions, Knowledge Base articles and official source documents." : "Search published regulatory updates and community discussions."}
+      />
 
       <form role="search" action="/search" method="get" className="rounded-md border border-line bg-surface p-4">
         {filters.type !== "all" && <input type="hidden" name="type" value={filters.type} />}
@@ -77,7 +85,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           </button>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Select name="source" label="Source" value={filters.source} options={[{ value: "all", label: "All sources" }, ...SOURCES.map((s) => ({ value: s.shortName, label: s.shortName })), { value: "Community", label: "Community" }, { value: "Knowledge Base", label: "Knowledge Base" }]} />
+          <Select name="source" label="Source" value={filters.source} options={[{ value: "all", label: "All sources" }, ...SOURCES.map((s) => ({ value: s.shortName, label: s.shortName })), { value: "Community", label: "Community" }, ...(DEMO_SECTIONS_ENABLED ? [{ value: "Knowledge Base", label: "Knowledge Base" }] : [])]} />
           <Select name="jurisdiction" label="Jurisdiction" value={filters.jurisdiction} options={[{ value: "all", label: "All" }, ...["EU", "UK", "US", "Global"].map((j) => ({ value: j, label: j }))]} />
           <Select name="topic" label="Topic" value={filters.topic} options={[{ value: "all", label: "All topics" }, ...TOPICS.map((t) => ({ value: t.slug, label: t.label }))]} />
           <Select name="date" label="Date" value={filters.date} options={[{ value: "any", label: "Any time" }, { value: "30d", label: "Past 30 days" }, { value: "90d", label: "Past 90 days" }, { value: "365d", label: "Past year" }]} />
@@ -110,7 +118,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                   All results <span className="font-mono">{totalAcrossTypes}</span>
                 </Link>
               </li>
-              {(Object.keys(TYPE_LABEL) as SearchContentType[]).map((t) => (
+              {VISIBLE_TYPES.map((t) => (
                 <li key={t}>
                   <Link href={hrefWith(filters, { type: t })} className={clsx("flex shrink-0 items-center justify-between gap-3 rounded-md px-3 py-2 text-xs font-medium", filters.type === t ? "bg-navy text-white" : "text-body hover:bg-surface")}>
                     {TYPE_LABEL[t]} <span className="font-mono">{response.counts[t]}</span>
