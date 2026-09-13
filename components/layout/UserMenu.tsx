@@ -89,6 +89,9 @@ export function UserMenu({ viewer }: { viewer: HeaderViewer }) {
             <MenuLink href="/notifications" icon="bell" onSelect={close}>
               Notifications
             </MenuLink>
+            <MenuLink href="/suggest" icon="flag" onSelect={close}>
+              Suggest an improvement
+            </MenuLink>
             {!viewer.verified && (
               <MenuLink href="/verify-email" icon="mail" onSelect={close}>
                 Verify email
