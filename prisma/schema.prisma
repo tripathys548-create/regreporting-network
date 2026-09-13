@@ -35,6 +35,8 @@ model User {
   notifications    Notification[]
   reports          ContentReport[]
   auditLogs        AuditLog[]
+  suggestions      Suggestion[]
+  suggestionVotes  SuggestionVote[]
 }
 
 model Profile {
@@ -280,7 +282,9 @@ model IngestionRun {
   @@index([feedId, startedAt])
 }
 
-/// Every staff action (approvals, removals, suspensions, role changes).
+/// Every staff action (approvals, removals, suspensions, role changes) AND every
+/// admin security action (restrictions, event review). requestId ties an audit
+/// row back to the request/security event that triggered it.
 model AuditLog {
   id         String   @id @default(cuid())
   actorId    String?
@@ -289,8 +293,105 @@ model AuditLog {
   targetType String
   targetId   String
   detail     String   @default("")
+  requestId  String?
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
   @@index([targetType, targetId])
+}
+
+/// Raw security telemetry: auth failures, rate-limit trips, abuse-pattern hits, etc.
+/// Never store secrets, tokens, or full request bodies here — see lib/security/logger.ts.
+model SecurityEvent {
+  id          String    @id @default(cuid())
+  requestId   String
+  eventType   String // e.g. MULTIPLE_LOGIN_FAILURES, RATE_LIMIT_EXCEEDED, REGBOT_ABUSE, SSRF_BLOCKED
+  category    String // authentication | api-abuse | regbot-abuse | community-abuse | admin-security | infrastructure | data-security | application-error
+  severity    String // low | medium | high | critical
+  riskScore   Int       @default(0)
+  route       String    @default("")
+  ip          String    @default("")
+  userId      String?
+  detail      String    @default("") // short, non-sensitive summary only
+  status      String    @default("open") // open | reviewed | resolved
+  reviewedById String?
+  reviewNote  String?
+  createdAt   DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([eventType, createdAt])
+  @@index([category, severity, createdAt])
+  @@index([userId])
+}
+
+/// Aggregated alert surfaced to admins — one row can represent many underlying
+/// SecurityEvent rows (see lib/security/alerts.ts dedup/aggregation window).
+model SecurityAlert {
+  id           String    @id @default(cuid())
+  category     String
+  severity     String
+  title        String
+  summary      String
+  occurrences  Int       @default(1)
+  firstSeenAt  DateTime  @default(now())
+  lastSeenAt   DateTime  @default(now())
+  status       String    @default("open") // open | investigating | resolved | escalated
+  assignedToId String?
+  resolutionNote String?
+  createdAt    DateTime  @default(now())
+
+  @@index([status, severity, createdAt])
+  @@index([category, lastSeenAt])
+}
+
+/// Temporary restriction on a user or a source (IP/session), applied by an admin
+/// or by automated progressive controls. Enforced in lib/security/restrictions.ts.
+model SecurityRestriction {
+  id          String    @id @default(cuid())
+  targetType  String // user | source
+  targetId    String // userId, or an IP/session key for "source"
+  level       String // watch | rate-limited | challenge | restricted
+  reason      String    @default("")
+  createdById String?
+  expiresAt   DateTime
+  liftedAt    DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([targetType, targetId, expiresAt])
+}
+
+/// User-submitted improvement/bug suggestions, including the "Security" category.
+model Suggestion {
+  id            String    @id @default(cuid())
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  category      String // feature | bug | security | content | other
+  priority      String    @default("normal") // low | normal | high
+  relatedPage   String    @default("")
+  screenshotUrl String?
+  severity      String? // security category only: low | medium | high | critical
+  stepsToReproduce String @default("")
+  status        String    @default("open") // open | planned | in-progress | shipped | declined
+  ownerId       String?
+  adminNotes    String    @default("")
+  targetRelease String    @default("")
+  voteCount     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  votes SuggestionVote[]
+
+  @@index([status, category, createdAt])
+}
+
+model SuggestionVote {
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  suggestionId String
+  suggestion   Suggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([userId, suggestionId])
 }

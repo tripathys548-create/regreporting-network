@@ -19,10 +19,14 @@ import { formatDate } from "@/lib/format";
 import { firstParam, type SearchParams } from "@/lib/params";
 import {
   getAdminOverview,
+  getSecurityOverview,
   listAuditLog,
   listFeedsAndRuns,
   listRemovedContent,
   listReportsForModeration,
+  listSecurityAlerts,
+  listSecurityEvents,
+  listSuggestionsForAdmin,
   listUpdatesForReview,
   listUsersForAdmin,
   type AdminSection,
@@ -372,6 +376,154 @@ async function UsersSection({ viewerId, isAdmin }: { viewerId: string; isAdmin: 
   );
 }
 
+const THREAT_TONE: Record<string, BadgeTone> = { LOW: "good", MEDIUM: "signal", HIGH: "bad", CRITICAL: "bad" };
+const SEVERITY_TONE: Record<string, BadgeTone> = { low: "outline", medium: "signal", high: "bad", critical: "bad" };
+
+async function SecuritySection() {
+  const [overview, alerts, events] = await Promise.all([getSecurityOverview(), listSecurityAlerts(), listSecurityEvents(50)]);
+
+  return (
+    <div className="space-y-4 p-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-md border border-line bg-canvas p-3">
+          <p className="text-2xs uppercase tracking-wide text-muted">Current threat level</p>
+          <Badge tone={THREAT_TONE[overview.threatLevel]}>{overview.threatLevel}</Badge>
+        </div>
+        <div className="rounded-md border border-line bg-canvas p-3">
+          <p className="text-2xs uppercase tracking-wide text-muted">Events today</p>
+          <p className="font-mono text-xl font-semibold text-ink">{overview.eventsToday}</p>
+        </div>
+        <div className="rounded-md border border-line bg-canvas p-3">
+          <p className="text-2xs uppercase tracking-wide text-muted">Auth failures today</p>
+          <p className="font-mono text-xl font-semibold text-ink">{overview.authFailuresToday}</p>
+        </div>
+        <div className="rounded-md border border-line bg-canvas p-3">
+          <p className="text-2xs uppercase tracking-wide text-muted">Open alerts</p>
+          <p className="font-mono text-xl font-semibold text-ink">{overview.openAlertsCount}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-2xs text-muted">
+        <p>Rate-limit events: <span className="font-mono text-ink">{overview.rateLimitEventsToday}</span></p>
+        <p>RegBot abuse: <span className="font-mono text-ink">{overview.regbotAbuseToday}</span></p>
+        <p>Admin events: <span className="font-mono text-ink">{overview.adminEventsToday}</span></p>
+        <p>Critical open: <span className="font-mono text-ink">{overview.criticalOpenCount}</span></p>
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-xs font-semibold text-ink">Recent alerts</h3>
+        {alerts.length === 0 ? (
+          <EmptyState icon="shield" title="No alerts" description="Security alerts appear here, grouped to avoid one notification per occurrence." />
+        ) : (
+          <ul className="divide-y divide-line rounded-md border border-line bg-surface">
+            {alerts.map((a) => (
+              <li key={a.id} className="px-4 py-3">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge tone={SEVERITY_TONE[a.severity]}>{a.severity}</Badge>
+                  <Badge tone="outline">{a.category}</Badge>
+                  <Badge tone="outline">{a.status}</Badge>
+                  <span className="text-2xs text-muted">
+                    {a.occurrences}× · last seen <RelativeTime iso={a.lastSeenAt} />
+                  </span>
+                </div>
+                <p className="mt-1 text-xs font-semibold text-ink">{a.title}</p>
+                <p className="text-xs text-body">{a.summary}</p>
+                {(a.status === "open" || a.status === "investigating") && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <AdminAction endpoint="/api/admin/security" body={{ action: "resolve-alert", alertId: a.id }} label="Resolve" icon="check" reasonPrompt="Resolution note" reasonField="note" />
+                    <AdminAction endpoint="/api/admin/security" body={{ action: "escalate-alert", alertId: a.id }} label="Escalate" variant="secondary" reasonPrompt="Escalation note" reasonField="note" />
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-xs font-semibold text-ink">Events</h3>
+        <div className="relative overflow-x-auto rounded-md border border-line">
+          <table className="w-full min-w-[48rem] text-left text-xs">
+            <thead className="bg-canvas/50 text-2xs uppercase tracking-wide text-muted">
+              <tr>
+                <th scope="col" className="px-4 py-2 font-semibold">When</th>
+                <th scope="col" className="px-4 py-2 font-semibold">Type</th>
+                <th scope="col" className="px-4 py-2 font-semibold">Severity</th>
+                <th scope="col" className="px-4 py-2 font-semibold">Route</th>
+                <th scope="col" className="px-4 py-2 font-semibold">Request ID</th>
+                <th scope="col" className="px-4 py-2 font-semibold">Status</th>
+                <th scope="col" className="px-4 py-2 font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line bg-surface">
+              {events.map((e) => (
+                <tr key={e.id}>
+                  <td className="whitespace-nowrap px-4 py-2 text-muted"><RelativeTime iso={e.createdAt} /></td>
+                  <td className="px-4 py-2 font-mono text-2xs">{e.eventType}</td>
+                  <td className="px-4 py-2"><Badge tone={SEVERITY_TONE[e.severity]}>{e.severity}</Badge></td>
+                  <td className="px-4 py-2 font-mono text-2xs text-muted">{e.route}</td>
+                  <td className="px-4 py-2 font-mono text-2xs text-muted">{e.requestId}</td>
+                  <td className="px-4 py-2 text-2xs text-muted">{e.status}</td>
+                  <td className="px-4 py-2">
+                    {e.status === "open" && <AdminAction endpoint="/api/admin/security" body={{ action: "review-event", eventId: e.id }} label="Mark reviewed" variant="ghost" reasonPrompt="Note (optional)" reasonField="note" />}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-xs font-semibold text-ink">Protection controls</h3>
+        <ul className="grid gap-2 sm:grid-cols-2 text-xs">
+          <li className="rounded-md border border-line bg-canvas px-3 py-2">Application rate limiting — <span className="font-medium text-good">Active</span></li>
+          <li className="rounded-md border border-line bg-canvas px-3 py-2">Authentication monitoring — <span className="font-medium text-good">Active</span></li>
+          <li className="rounded-md border border-line bg-canvas px-3 py-2">RegBot protection (quotas + rate limits) — <span className="font-medium text-good">Active</span></li>
+          <li className="rounded-md border border-line bg-canvas px-3 py-2">Audit logging — <span className="font-medium text-good">Active</span></li>
+          <li className="rounded-md border border-line bg-canvas px-3 py-2">Cloudflare WAF — <span className="font-medium text-signal">Requires Cloudflare configuration</span></li>
+          <li className="rounded-md border border-line bg-canvas px-3 py-2">Cloudflare edge rate limiting — <span className="font-medium text-signal">Requires Cloudflare configuration</span></li>
+          <li className="rounded-md border border-line bg-canvas px-3 py-2">Cloudflare bot protection — <span className="font-medium text-signal">Requires Cloudflare configuration</span></li>
+          <li className="rounded-md border border-line bg-canvas px-3 py-2">DDoS protection — <span className="font-medium text-signal">Requires Cloudflare configuration</span></li>
+        </ul>
+        <p className="mt-2 text-2xs text-muted">See <span className="font-mono">docs/CLOUDFLARE_SETUP.md</span> to configure the edge layer. A control shown here as active is enforced in this application; it is not a substitute for the edge protections above.</p>
+      </div>
+    </div>
+  );
+}
+
+async function SuggestionsSection() {
+  const rows = await listSuggestionsForAdmin();
+  if (rows.length === 0) return <EmptyState icon="flag" title="No suggestions yet" />;
+  return (
+    <ul className="divide-y divide-line">
+      {rows.map((s) => (
+        <li key={s.id} className="px-4 py-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge tone={s.category === "security" ? "bad" : "outline"}>{s.category}</Badge>
+            <Badge tone="outline">{s.priority}</Badge>
+            {s.severity && <Badge tone={SEVERITY_TONE[s.severity]}>{s.severity}</Badge>}
+            <Badge tone={s.status === "shipped" ? "good" : s.status === "declined" ? "bad" : "outline"}>{s.status}</Badge>
+            <span className="text-2xs text-muted">
+              {s.voteCount} votes · by {s.authorName} · <RelativeTime iso={s.createdAt} />
+            </span>
+          </div>
+          <p className="mt-1 text-xs font-semibold text-ink">{s.title}</p>
+          <p className="text-xs text-body">{s.description}</p>
+          {s.relatedPage && <p className="mt-1 text-2xs text-muted">Page: {s.relatedPage}</p>}
+          {s.adminNotes && <p className="mt-1 text-2xs text-muted">Admin notes: {s.adminNotes}</p>}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {["planned", "in-progress", "shipped", "declined"].map((status) => (
+              <AdminAction key={status} endpoint={`/api/admin/suggestions/${s.id}`} method="PATCH" body={{ status }} label={status} variant={s.status === status ? "primary" : "ghost"} />
+            ))}
+            <AdminAction endpoint={`/api/admin/suggestions/${s.id}`} method="PATCH" body={{}} label="Add note" reasonPrompt="Admin note" reasonField="adminNotes" />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 async function AuditSection() {
   const rows = await listAuditLog();
   if (rows.length === 0) return <EmptyState icon="layers" title="No staff actions yet" />;
@@ -437,8 +589,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     case "users":
       content = <UsersSection viewerId={session.user.id} isAdmin={isAdmin} />;
       break;
+    case "security":
+      content = <SecuritySection />;
+      break;
     case "audit":
       content = <AuditSection />;
+      break;
+    case "suggestions":
+      content = <SuggestionsSection />;
       break;
     default:
       content = <EmptyState icon="settings" title="Management tools coming soon" description={active.description} />;
