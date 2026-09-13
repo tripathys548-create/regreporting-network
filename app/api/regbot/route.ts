@@ -2,22 +2,22 @@ import { NextResponse } from "next/server";
 import { clientIp, limitOrNull } from "@/lib/http";
 import { regbotLiveEnabled } from "@/lib/regbot/config";
 import { runLiveRegBot } from "@/lib/regbot/live";
-import { runRegBotPipeline } from "@/lib/regbot/pipeline";
+import { runReferenceRegBot } from "@/lib/regbot/reference";
 import type { RegBotResponse } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 const MAX_QUESTION_LENGTH = 600;
-// Mock mode only: small delay so loading states behave like a real network call.
-const MOCK_LATENCY_MS = 450;
+// Reference mode only: small delay so loading states behave like a real network call.
+const MOCK_LATENCY_MS = 350;
 // Live answers cost money per call, so they get an hourly cap on top of the per-minute limit.
 const LIVE_HOURLY_LIMIT = 40;
 
 /**
  * POST /api/regbot  { question, sessionId? } → RegBotResponse
  *
- * Live mode (ANTHROPIC_API_KEY set) answers with Claude following the RegBot
- * specification; otherwise the demo pipeline answers from the fixed corpus.
+ * Default (free): prewritten reference library, then the demo corpus. Optional
+ * paid live mode (ANTHROPIC_API_KEY set) answers with Claude using the same specification.
  */
 export async function POST(request: Request) {
   const ip = clientIp(request);
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const answer = live ? await runLiveRegBot(question) : await runRegBotPipeline(question);
+    const answer = live ? await runLiveRegBot(question) : await runReferenceRegBot(question);
     if (!live) await new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS));
     const sessionId = typeof raw.sessionId === "string" && raw.sessionId ? raw.sessionId : `cs-${crypto.randomUUID()}`;
     return NextResponse.json<RegBotResponse>({ ok: true, sessionId, answer });

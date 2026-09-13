@@ -44,12 +44,16 @@ emails are never stored. Gmail limits sending volume; move to a transactional pr
 RegBot follows the specification in `lib/regbot/systemPrompt.ts` (one-sentence answers by default, no invented
 field counts, law vs guidance vs community kept separate).
 
-- **Live mode** — set `ANTHROPIC_API_KEY` (and optionally `REGBOT_MODEL`, default `claude-opus-5`). Each question is
+- **Reference mode (default, free)** — prewritten answers in `lib/regbot/library.ts` (definitions, who regulates, why it
+  matters, what is reported, comparisons, the reporting flow and the "depends on the specification" field-count answer),
+  matched by `lib/regbot/libraryAnswer.ts`. Unmatched questions fall back to the demo corpus, then to a "not covered
+  yet" answer. Add entries to the library to extend RegBot; `npm test` checks every definition is one sentence.
+- **Live mode (optional, paid)** — set `ANTHROPIC_API_KEY` (and optionally `REGBOT_MODEL`, default `claude-opus-5`). Each question is
   one Claude call that must answer through a structured tool; `lib/regbot/normalise.ts` validates the output, and
   source links come only from the official-domain registry, never from the model. There is no retrieval yet, so
   answers are labelled "AI-generated · verify against the official source". Limits: 20 questions/minute and
   40/hour per IP.
-- **Demo mode** — without a key, the extractive pipeline answers from the fixed demo corpus.
+- Without a key RegBot never calls a paid API.
 
 ## Regulatory update ingestion
 

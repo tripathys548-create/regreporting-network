@@ -8,12 +8,7 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import { ErrorState, Skeleton } from "@/components/ui/States";
 import { RegBotAnswerView } from "./RegBotAnswerView";
 
-export const SUGGESTED_QUESTIONS = [
-  "What happens when the UTI is missing on a lifecycle event?",
-  "Which action type should I use to correct erroneous data?",
-  "How should delegated reporting controls work?",
-  "What if the UTI is shared late by the counterparty?",
-];
+export const SUGGESTED_QUESTIONS = ["What is UTI?", "CFTC vs EMIR", "How many fields are reported under EMIR?", "How does regulatory reporting work?"];
 
 const PIPELINE_STEPS = ["Classifying query", "Searching trusted sources", "Retrieving documents", "Extracting passages", "Generating answer", "Building citations", "Evaluating confidence"];
 
@@ -171,9 +166,9 @@ export function RegBotWidget({ isOpen, onOpen, onClose, turns, isBusy, onAsk, on
           AI-generated answers without live source search. Not legal or regulatory advice; verify against the official source.
         </p>
       ) : (
-        <p className="flex items-center gap-1.5 border-b border-signal/20 bg-signal-soft px-3 py-1.5 text-2xs text-signal" role="note">
+        <p className="flex items-center gap-1.5 border-b border-line bg-surface px-3 py-1.5 text-2xs text-muted" role="note">
           <Icon name="info" className="h-3 w-3" />
-          Demo mode: answers come from a fixed demo corpus, not live regulatory search.
+          Prewritten reference answers, not live source search. Not legal or regulatory advice; verify against the official source.
         </p>
       )}
 

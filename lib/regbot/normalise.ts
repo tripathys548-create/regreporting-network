@@ -28,6 +28,8 @@ const OTHER_AUTHORITIES: { names: string[]; shortName: string; tier: SourceTier;
   { names: ["fatf"], shortName: "FATF", tier: 1, websiteUrl: "https://www.fatf-gafi.org" },
   { names: ["fincen"], shortName: "FinCEN", tier: 1, websiteUrl: "https://www.fincen.gov" },
   { names: ["fiu-ind", "fiu india"], shortName: "FIU-IND", tier: 1, websiteUrl: "https://fiuindia.gov.in" },
+  { names: ["iosco"], shortName: "IOSCO", tier: 1, websiteUrl: "https://www.iosco.org" },
+  { names: ["swift"], shortName: "SWIFT", tier: 3, websiteUrl: "https://www.swift.com" },
 ];
 
 const text = (value: unknown, max = MAX_ANSWER_LENGTH) => (typeof value === "string" ? value.trim().slice(0, max) : "");
@@ -35,7 +37,7 @@ const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 const oneOf = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(value as T) ? (value as T) : fallback);
 const asRecord = (value: unknown): Record<string, unknown> => (value && typeof value === "object" ? (value as Record<string, unknown>) : {});
 
-function resolveAuthority(name: string): { shortName: string; tier: SourceTier; url: string | null } {
+export function resolveAuthority(name: string): { shortName: string; tier: SourceTier; url: string | null } {
   const key = name.trim().toLowerCase();
   const registered = SOURCES.find((s) => s.shortName.toLowerCase() === key || s.slug === key || s.fullName.toLowerCase() === key);
   if (registered) return { shortName: registered.shortName, tier: registered.tier, url: registered.websiteUrl };
