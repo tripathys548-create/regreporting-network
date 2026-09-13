@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev -p 3100",
-    "build": "prisma migrate deploy && tsx scripts/setup-production.ts && next build",
-    "build:app": "next build",
-    "start": "next start",
+    "build": "next build",
+    "start": "prisma migrate deploy && tsx scripts/setup-production.ts && next start",
+    "start:app": "next start",
     "start:local": "next start -p 3100",
     "db:deploy": "prisma migrate deploy",
     "setup:production": "tsx scripts/setup-production.ts",
