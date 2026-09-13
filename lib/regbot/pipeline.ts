@@ -158,7 +158,7 @@ function evaluateConfidence(passages: RetrievedPassage[], conflicts: SourceConfl
   return { confidence: "low", rationale: "No Tier 1 regulatory source was found; answer relies on guidance or implementation material." };
 }
 
-async function buildCommunityView(tokens: string[], topics: TopicSlug[]): Promise<CommunityView | null> {
+export async function buildCommunityView(tokens: string[], topics: TopicSlug[]): Promise<CommunityView | null> {
   const candidates = await prisma.discussion.findMany({
     where: { status: "published" },
     select: { slug: true, category: true, tags: true, voteScore: true, replyCount: true, acceptedCommentId: true },

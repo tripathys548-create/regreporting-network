@@ -22,7 +22,7 @@ const RegBotPanelContext = createContext<RegBotPanelContextValue | null>(null);
  * Hosts the RegBot popup for the whole app. Mounted in the root layout, so the
  * conversation survives client-side navigation between pages.
  */
-export function RegBotProvider({ children }: { children: React.ReactNode }) {
+export function RegBotProvider({ children, live = false }: { children: React.ReactNode; live?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<OpenRegBotOptions | null>(null);
@@ -58,6 +58,7 @@ export function RegBotProvider({ children }: { children: React.ReactNode }) {
         onReset={reset}
         draft={draft}
         onDraftChange={setDraft}
+        live={live}
       />
     </RegBotPanelContext.Provider>
   );

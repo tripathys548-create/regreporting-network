@@ -27,8 +27,10 @@ export interface AnswerSourceRef {
   tier: SourceTier;
   title: string;
   locator: string;
-  publishedAt: ISODateString;
-  url: string;
+  /** Null when the source was named by the model rather than retrieved. */
+  publishedAt: ISODateString | null;
+  /** Official website or document link; null when no verified link is known. */
+  url: string | null;
   isDemo: boolean;
 }
 
@@ -78,7 +80,7 @@ export interface RegBotAnswer {
   confidenceRationale: string;
   communityView: CommunityView | null;
   pipeline: PipelineStage[];
-  /** "mock" until the RAG backend is connected. The UI must surface this. */
+  /** "mock" = demo corpus; "live" = Claude without retrieval. The UI must surface this. */
   mode: "mock" | "live";
 }
 

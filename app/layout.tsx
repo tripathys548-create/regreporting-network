@@ -10,6 +10,7 @@ import { RegBotUrlOpener } from "@/components/regbot/AskRegBot";
 import { RegBotProvider } from "@/components/regbot/RegBotProvider";
 import { canPublish, getSession } from "@/lib/auth/session";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
+import { regbotLiveEnabled } from "@/lib/regbot/config";
 import { listNotifications } from "@/lib/repositories/notifications";
 import { getRegulatoryAlert } from "@/lib/repositories/updates";
 
@@ -42,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:px-3 focus:py-2 focus:text-sm">
           Skip to content
         </a>
-        <RegBotProvider>
+        <RegBotProvider live={regbotLiveEnabled()}>
           <RegulatoryAlertBanner initialAlert={alert} />
           <AppHeader viewer={viewer} notifications={notifications} />
           {viewer && !viewer.verified && <VerifyEmailBanner />}

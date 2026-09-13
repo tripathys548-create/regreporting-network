@@ -39,6 +39,18 @@ While `SMTP_PASS` is empty, emails are not sent: they are recorded and readable 
 only). Admin → Sources & Ingestion shows whether SMTP is configured and any delivery failures. Bodies of delivered
 emails are never stored. Gmail limits sending volume; move to a transactional provider before launch.
 
+## RegBot
+
+RegBot follows the specification in `lib/regbot/systemPrompt.ts` (one-sentence answers by default, no invented
+field counts, law vs guidance vs community kept separate).
+
+- **Live mode** — set `ANTHROPIC_API_KEY` (and optionally `REGBOT_MODEL`, default `claude-opus-5`). Each question is
+  one Claude call that must answer through a structured tool; `lib/regbot/normalise.ts` validates the output, and
+  source links come only from the official-domain registry, never from the model. There is no retrieval yet, so
+  answers are labelled "AI-generated · verify against the official source". Limits: 20 questions/minute and
+  40/hour per IP.
+- **Demo mode** — without a key, the extractive pipeline answers from the fixed demo corpus.
+
 ## Regulatory update ingestion
 
 | Source | Feed |

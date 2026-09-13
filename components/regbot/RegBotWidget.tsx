@@ -64,10 +64,12 @@ interface RegBotWidgetProps {
   onReset: () => void;
   draft: string;
   onDraftChange: (value: string) => void;
+  /** True when answers come from the live AI model rather than the demo corpus. */
+  live: boolean;
 }
 
 /** Floating launcher + non-modal chat panel. Full screen below the sm breakpoint. */
-export function RegBotWidget({ isOpen, onOpen, onClose, turns, isBusy, onAsk, onRetry, onReset, draft, onDraftChange }: RegBotWidgetProps) {
+export function RegBotWidget({ isOpen, onOpen, onClose, turns, isBusy, onAsk, onRetry, onReset, draft, onDraftChange, live }: RegBotWidgetProps) {
   const [expanded, setExpanded] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -163,10 +165,17 @@ export function RegBotWidget({ isOpen, onOpen, onClose, turns, isBusy, onAsk, on
         <HeaderButton icon={expanded ? "minimize" : "maximize"} label={expanded ? "Shrink panel" : "Expand panel"} onClick={() => setExpanded((v) => !v)} className="hidden sm:flex" />
         <HeaderButton icon="x" label="Close RegBot" onClick={onClose} />
       </header>
-      <p className="flex items-center gap-1.5 border-b border-signal/20 bg-signal-soft px-3 py-1.5 text-2xs text-signal" role="note">
-        <Icon name="info" className="h-3 w-3" />
-        Demo mode: answers come from a fixed demo corpus, not live regulatory search.
-      </p>
+      {live ? (
+        <p className="flex items-center gap-1.5 border-b border-line bg-surface px-3 py-1.5 text-2xs text-muted" role="note">
+          <Icon name="info" className="h-3 w-3" />
+          AI-generated answers without live source search. Not legal or regulatory advice; verify against the official source.
+        </p>
+      ) : (
+        <p className="flex items-center gap-1.5 border-b border-signal/20 bg-signal-soft px-3 py-1.5 text-2xs text-signal" role="note">
+          <Icon name="info" className="h-3 w-3" />
+          Demo mode: answers come from a fixed demo corpus, not live regulatory search.
+        </p>
+      )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3">
         {turns.length === 0 ? (
