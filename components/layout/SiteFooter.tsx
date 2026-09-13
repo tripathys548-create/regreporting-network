@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RegWorldLogo } from "@/components/brand/RegWorldLogo";
 import { PRIMARY_NAV, SECONDARY_NAV, SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
 
 export function SiteFooter() {
@@ -6,8 +7,13 @@ export function SiteFooter() {
     <footer className="mt-12 border-t border-line bg-surface">
       <div className="mx-auto grid max-w-shell gap-6 px-4 py-8 text-xs text-muted sm:px-6 md:grid-cols-[1.5fr_1fr]">
         <div>
-          <p className="text-sm font-semibold text-ink">{SITE_NAME}</p>
-          <p className="mt-1 max-w-md">{SITE_TAGLINE}</p>
+          <div className="flex items-center gap-3">
+            <RegWorldLogo className="h-14 w-14" />
+            <div>
+              <p className="text-sm font-semibold text-ink">{SITE_NAME}</p>
+              <p className="mt-0.5 max-w-md">{SITE_TAGLINE}</p>
+            </div>
+          </div>
           <p className="mt-4 max-w-xl leading-relaxed">
             Phase 1 preview. Regulatory updates, knowledge articles, challenge questions and RegBot answers are{" "}
             <strong className="font-semibold text-signal">Example / Demo Content</strong> and must not be relied upon. Nothing on this platform is legal or

@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { PRIMARY_NAV, SECONDARY_NAV, SITE_NAME } from "@/lib/constants";
 import type { Notification } from "@/types";
+import { RegWorldEmblem, RegWorldWordmark } from "@/components/brand/RegWorldLogo";
 import { useRegBotPanel } from "@/components/regbot/RegBotProvider";
 import { Icon } from "@/components/ui/Icon";
 import { NotificationBell } from "./NotificationBell";
@@ -19,11 +20,9 @@ function isActive(pathname: string, href: string) {
 
 function Logo() {
   return (
-    <Link href="/" className="flex shrink-0 items-center gap-2 text-white" aria-label={`${SITE_NAME} home`}>
-      <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-accent font-mono text-[11px] font-bold tracking-tight">RR</span>
-      <span className="hidden text-sm font-semibold tracking-tight sm:inline">
-        RegReporting<span className="font-normal text-slate-400"> Network</span>
-      </span>
+    <Link href="/" className="flex shrink-0 items-center gap-2" aria-label={`RegWorld · ${SITE_NAME} home`}>
+      <RegWorldEmblem className="h-8 w-8" />
+      <RegWorldWordmark className="hidden text-[15px] sm:inline" />
     </Link>
   );
 }
