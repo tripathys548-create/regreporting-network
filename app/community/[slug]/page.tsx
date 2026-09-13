@@ -17,7 +17,6 @@ import { SourceTypeLabel } from "@/components/ui/SourceLabels";
 import { EmptyState } from "@/components/ui/States";
 import { topicLabel } from "@/data/topics";
 import { getSession, getViewerStatus } from "@/lib/auth/session";
-import { DEMO_SECTIONS_ENABLED } from "@/lib/features";
 import { formatCompact } from "@/lib/format";
 import { getDiscussionBySlug, getViewerState, listComments, listDiscussions, recordDiscussionView } from "@/lib/repositories/community";
 import { listArticles } from "@/lib/repositories/knowledge";
@@ -162,15 +161,13 @@ export default async function DiscussionPage({ params }: { params: { slug: strin
             )}
           </Panel>
         )}
-        {DEMO_SECTIONS_ENABLED && (
-          <Panel title="Research with RegBot" icon="bot">
-            <p className="text-xs text-body">See what trusted sources say before relying on member interpretation.</p>
-            <AskRegBotButton question={discussion.title} className="mt-3">
-              Ask RegBot this question
-            </AskRegBotButton>
-          </Panel>
-        )}
-        {DEMO_SECTIONS_ENABLED && article && (
+        <Panel title="Research with RegBot" icon="bot">
+          <p className="text-xs text-body">See what trusted sources say before relying on member interpretation.</p>
+          <AskRegBotButton question={discussion.title} className="mt-3">
+            Ask RegBot this question
+          </AskRegBotButton>
+        </Panel>
+        {article && (
           <Panel title="Knowledge Base" icon="book">
             <Link href={`/knowledge/${article.slug}`} className="text-sm font-semibold text-ink hover:text-accent">
               {article.title}

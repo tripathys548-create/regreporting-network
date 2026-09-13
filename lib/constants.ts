@@ -1,5 +1,4 @@
 import type { ContentStatus, SourceTier, SourceType } from "@/types";
-import { DEMO_SECTIONS_ENABLED } from "@/lib/features";
 
 export const ORGANISATION_TYPES = [
   "Sell-side bank",
@@ -15,22 +14,19 @@ export const ORGANISATION_TYPES = [
 export const SITE_NAME = "RegReporting Network";
 export const SITE_TAGLINE = "The community and intelligence layer for regulatory reporting professionals.";
 
-const DEMO_SECTION_HREFS = new Set(["/knowledge", "/regbot", "/challenges", "/timeline"]);
-const visibleNav = <T extends { href: string }>(items: readonly T[]) => (DEMO_SECTIONS_ENABLED ? items : items.filter((item) => !DEMO_SECTION_HREFS.has(item.href)));
-
-export const PRIMARY_NAV = visibleNav([
+export const PRIMARY_NAV = [
   { href: "/", label: "Home" },
   { href: "/radar", label: "Regulatory Radar" },
   { href: "/community", label: "Community" },
   { href: "/knowledge", label: "Knowledge Base" },
   { href: "/regbot", label: "RegBot" },
   { href: "/challenges", label: "Challenges" },
-] as const);
+] as const;
 
-export const SECONDARY_NAV = visibleNav([
+export const SECONDARY_NAV = [
   { href: "/timeline", label: "Timeline" },
   { href: "/admin", label: "Admin" },
-] as const);
+] as const;
 
 interface SourceTypeMeta {
   label: string;

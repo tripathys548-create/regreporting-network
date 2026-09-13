@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import { DOCUMENTS } from "@/data/documents";
 import { SOURCES } from "@/data/sources";
 import { isTopicSlug } from "@/data/topics";
-import { DEMO_SECTIONS_ENABLED } from "@/lib/features";
 import { excerpt, termsMatch, tokenize } from "@/lib/text";
 import type { DateRange, Jurisdiction, SearchContentType, SearchFilters, SearchResponse, SearchResult, TopicSlug } from "@/types";
 
@@ -43,9 +42,9 @@ function buildIndex(): IndexedDoc[] {
   return docs;
 }
 
-// Static content (articles, documents) is sample content: indexed once per process, and only when demo sections are shown.
+// Static content (updates, articles, documents) is indexed once per process.
 let cachedIndex: IndexedDoc[] | null = null;
-const getStaticIndex = () => (DEMO_SECTIONS_ENABLED ? (cachedIndex ??= buildIndex()) : []);
+const getStaticIndex = () => (cachedIndex ??= buildIndex());
 
 /** Community content is read from the database on every search, including reply text. */
 async function buildDiscussionIndex(): Promise<IndexedDoc[]> {

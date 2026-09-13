@@ -4,7 +4,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Button, type ButtonSize, type ButtonVariant } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { DEMO_SECTIONS_ENABLED } from "@/lib/features";
 import { useRegBotPanel } from "./RegBotProvider";
 
 /** Opens the RegBot popup, optionally asking (or pre-filling) a question. Usable from server-rendered pages. */
@@ -24,7 +23,6 @@ export function AskRegBotButton({
   className?: string;
 }) {
   const { open } = useRegBotPanel();
-  if (!DEMO_SECTIONS_ENABLED) return null;
   return (
     <Button variant={variant} size={size} icon="bot" className={className} onClick={() => open({ question, autoSubmit })} aria-haspopup="dialog">
       {children}
@@ -44,7 +42,6 @@ export function RegBotQuickAsk() {
     setQuestion("");
   }
 
-  if (!DEMO_SECTIONS_ENABLED) return null;
   return (
     <form onSubmit={submit} className="rounded-md border border-white/10 bg-white/[0.04] p-3">
       <label htmlFor="hero-regbot" className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-slate-400">

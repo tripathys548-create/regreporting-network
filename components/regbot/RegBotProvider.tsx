@@ -2,7 +2,6 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRegBot } from "@/hooks/useRegBot";
-import { DEMO_SECTIONS_ENABLED } from "@/lib/features";
 import { RegBotWidget } from "./RegBotWidget";
 
 export interface OpenRegBotOptions {
@@ -48,20 +47,18 @@ export function RegBotProvider({ children }: { children: React.ReactNode }) {
   return (
     <RegBotPanelContext.Provider value={value}>
       {children}
-      {DEMO_SECTIONS_ENABLED && (
-        <RegBotWidget
-          isOpen={isOpen}
-          onOpen={() => open()}
-          onClose={close}
-          turns={turns}
-          isBusy={isBusy}
-          onAsk={(q) => void ask(q)}
-          onRetry={retry}
-          onReset={reset}
-          draft={draft}
-          onDraftChange={setDraft}
-        />
-      )}
+      <RegBotWidget
+        isOpen={isOpen}
+        onOpen={() => open()}
+        onClose={close}
+        turns={turns}
+        isBusy={isBusy}
+        onAsk={(q) => void ask(q)}
+        onRetry={retry}
+        onReset={reset}
+        draft={draft}
+        onDraftChange={setDraft}
+      />
     </RegBotPanelContext.Provider>
   );
 }
