@@ -58,7 +58,6 @@ export default async function UpdateDetailPage({ params }: { params: { id: strin
               <SourceTypeLabel type={source.sourceType} size="xs" />
               <TopicBadge topic={update.category} href={`/community?category=${update.category}`} />
               {update.severity !== "standard" && <Badge tone={update.severity === "critical" ? "bad" : "signal"}>{update.severity === "critical" ? "Critical" : "High impact"}</Badge>}
-              {update.isDemo && <DemoContentLabel />}
             </div>
             <h1 className="mt-3 text-xl font-semibold leading-snug text-ink sm:text-2xl">{update.title}</h1>
             <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs">
@@ -80,11 +79,7 @@ export default async function UpdateDetailPage({ params }: { params: { id: strin
           <div className="p-5">
             <h2 className="font-mono text-2xs font-semibold uppercase tracking-widest text-muted">Summary</h2>
             <p className="mt-2 text-sm leading-relaxed text-body">{update.summary}</p>
-            {update.isDemo && (
-              <p className="mt-4 rounded-md border border-dashed border-signal/40 bg-signal-soft px-3 py-2 text-xs text-signal">
-                This is Example / Demo Content and does not describe a real publication. The link below opens the publisher&apos;s official website.
-              </p>
-            )}
+            {update.isDemo && <DemoContentLabel className="mt-4" />}
             <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4">
               <ButtonLink href={update.originalUrl} external variant="primary" iconRight="external">
                 Read {source.shortName} Update

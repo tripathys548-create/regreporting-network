@@ -68,7 +68,7 @@ export default async function ChallengesPage() {
         <aside className="space-y-6">
           <Panel title="Your progress" icon="trophy">
             <ChallengeStats leaderboard={leaderboard} />
-            <p className="mt-3 text-2xs text-muted">Stored in this browser for Phase 1. Server-side scoring and verified leaderboards arrive in Phase 5.</p>
+            <p className="mt-3 text-2xs text-muted">Your progress is stored in this browser.</p>
           </Panel>
 
           <Panel title="Leaderboard" icon="layers" bodyClassName="p-0" headerRight={<span className="text-2xs text-muted">All time</span>}>

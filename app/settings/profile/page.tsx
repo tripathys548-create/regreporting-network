@@ -57,7 +57,7 @@ export default async function ProfileSettingsPage() {
             <p className="text-xs text-body">
               {profile.verifiedPractitioner
                 ? "Your practitioner status has been verified by moderators."
-                : "Moderators verify practitioner status separately from email verification. A request flow is planned for Phase 5."}
+                : "Moderators verify practitioner status separately from email verification."}
             </p>
           </Panel>
         </aside>

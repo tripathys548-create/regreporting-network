@@ -146,7 +146,7 @@ export default async function ProfilePage({ params }: { params: { handle: string
           </dl>
           <p className="mt-3 text-2xs text-muted">
             {profile.stats.followers} {profile.stats.followers === 1 ? "member follows" : "members follow"} this expert. Reputation = 15 per accepted answer + 2 per upvote received + 1 per
-            contribution; a fuller model is planned for Phase 5.
+            contribution.
           </p>
         </Panel>
       </aside>

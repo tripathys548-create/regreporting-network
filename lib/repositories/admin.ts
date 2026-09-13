@@ -42,8 +42,8 @@ export async function getAdminOverview(): Promise<AdminSectionSummary[]> {
     { id: "moderation", label: "Removed Content", description: "Discussions and replies removed by moderators.", total: removed, needsAttention: 0, attentionLabel: "", staff: true },
     { id: "users", label: "Members", description: "Suspensions, practitioner verification and roles.", total: users, needsAttention: unverified, attentionLabel: "pending or suspended", staff: true },
     { id: "audit", label: "Audit Log", description: "Every staff action.", total: audit, needsAttention: 0, attentionLabel: "in the last 7 days", staff: true },
-    { id: "knowledge", label: "Knowledge Base", description: "Article editing arrives with the RAG work in Phase 4.", total: ARTICLES.length, needsAttention: ARTICLES.filter((a) => a.isDemo).length, attentionLabel: "demo articles", staff: false },
-    { id: "challenges", label: "Challenges", description: "Question management arrives in Phase 5.", total: CHALLENGES.length, needsAttention: QUESTIONS.filter((q) => q.isDemo).length, attentionLabel: "demo questions", staff: false },
+    { id: "knowledge", label: "Knowledge Base", description: "Reference articles. In-app editing is not available yet.", total: ARTICLES.length, needsAttention: ARTICLES.filter((a) => a.isDemo).length, attentionLabel: "not yet verified against sources", staff: false },
+    { id: "challenges", label: "Challenges", description: "Practice questions. In-app editing is not available yet.", total: CHALLENGES.length, needsAttention: QUESTIONS.filter((q) => q.isDemo).length, attentionLabel: "not yet verified against sources", staff: false },
   ];
 }
 

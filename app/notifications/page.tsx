@@ -68,7 +68,6 @@ export default async function NotificationsPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-4 border-t border-line pt-3 text-2xs text-muted">Per-type delivery preferences (in-app, email digest) are planned for Phase 5.</p>
         </Panel>
       </div>
     </div>

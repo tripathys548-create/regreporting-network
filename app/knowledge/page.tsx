@@ -126,7 +126,7 @@ export default async function KnowledgeIndexPage({ searchParams }: { searchParam
             </tbody>
           </table>
         </div>
-        <p className="border-t border-line px-4 py-2 text-2xs text-muted">Titles and dates are indicative demo references pending citation verification in Phase 4.</p>
+        <p className="border-t border-line px-4 py-2 text-2xs text-muted">Always verify document titles and dates against the publisher&apos;s official website.</p>
       </Panel>
     </>
   );
