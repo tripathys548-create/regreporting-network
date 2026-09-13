@@ -5,7 +5,7 @@ import { tokenize } from "@/lib/text";
 import type { PipelineStage, RegBotAnswer } from "@/types";
 import { REGBOT_DEFAULT_MODEL } from "./config";
 import { CONFIDENCE_LEVELS, normaliseModelAnswer, QUERY_INTENTS } from "./normalise";
-import { buildCommunityView } from "./pipeline";
+import { buildCommunityView } from "./community";
 import { REGBOT_SYSTEM_PROMPT } from "./systemPrompt";
 
 /*

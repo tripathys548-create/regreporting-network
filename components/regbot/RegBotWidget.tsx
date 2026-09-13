@@ -59,7 +59,7 @@ interface RegBotWidgetProps {
   onReset: () => void;
   draft: string;
   onDraftChange: (value: string) => void;
-  /** True when answers come from the live AI model rather than the demo corpus. */
+  /** True when answers come from the live AI model rather than the reference library. */
   live: boolean;
 }
 

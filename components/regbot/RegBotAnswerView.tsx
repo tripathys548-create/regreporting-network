@@ -60,12 +60,6 @@ export function RegBotAnswerView({ answer, turnId, onNavigate }: { answer: RegBo
           <Icon name="bot" className="text-accent" />
           RegBot research answer
         </p>
-        {answer.mode === "mock" && (
-          <span className="inline-flex items-center gap-1 rounded border border-dashed border-signal/40 bg-signal-soft px-1.5 py-0.5 text-2xs font-medium text-signal" title="No live regulatory search or LLM is connected in Phase 1.">
-            <Icon name="info" className="h-3 w-3" />
-            Demo mode · fixed demo corpus, no live source search
-          </span>
-        )}
         {answer.mode === "library" && (
           <span className="inline-flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-2xs font-medium text-muted" title="Prewritten reference answer. No live source search was performed.">
             <Icon name="info" className="h-3 w-3" />
@@ -145,7 +139,7 @@ export function RegBotAnswerView({ answer, turnId, onNavigate }: { answer: RegBo
                     </p>
                     {s.url && (
                       <a href={s.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-2xs font-medium text-accent hover:text-accent-strong">
-                        {answer.mode === "mock" ? "Open official source" : `Open ${s.sourceShortName} website`}
+                        Open {s.sourceShortName} website
                         <Icon name="external" className="h-3 w-3" />
                       </a>
                     )}

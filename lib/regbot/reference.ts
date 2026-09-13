@@ -1,61 +1,60 @@
 import { tokenize } from "@/lib/text";
 import type { PipelineStage, RegBotAnswer } from "@/types";
+import { buildCommunityView } from "./community";
 import { answerFromLibrary } from "./libraryAnswer";
-import { buildCommunityView, runRegBotPipeline } from "./pipeline";
 
 /*
- * Free RegBot: prewritten reference library first, then the demo corpus
- * pipeline, then an honest "not covered yet" answer. No model calls.
+ * Free RegBot: answers come only from the prewritten reference library. No
+ * model calls and no demo corpus; unmatched questions get an honest answer.
  */
 
 const NOT_COVERED =
   "RegBot's reference library does not cover this question yet. Try naming the regime, identifier or process (for example EMIR Refit, UTI, CFTC Part 45 or trade repository rejections), or ask the Community.";
-const OUT_OF_SCOPE = "RegBot covers financial regulatory reporting, compliance, operations and RegTech topics, so it cannot help with this question.";
+const SCENARIO_NOTE =
+  "For how this applies to a specific scenario, check the current regulatory technical standards and your trade repository's validation rules, or ask the Community for practitioner experience.";
 
 export async function runReferenceRegBot(question: string): Promise<RegBotAnswer> {
   const started = performance.now();
   const library = answerFromLibrary(question);
   const lookupMs = Math.round((performance.now() - started) * 10) / 10;
+  const tokens = tokenize(question);
 
-  // A scenario question that merely mentions a term ("What happens when the UTI is missing…")
-  // is better served by a matching demo passage than by the term's definition.
-  if (library?.weakMatch) {
-    const demo = await runRegBotPipeline(question);
-    if (demo.blocks.length > 0) return demo;
-  }
-
-  if (library) {
-    const communityView = await buildCommunityView(tokenize(question), library.classification.topics);
-    const pipeline: PipelineStage[] = [
-      { name: "classify", label: "Query classification", detail: `Question type: ${library.kind}; topics: ${library.classification.topics.join(", ") || "none detected"}`, durationMs: 0 },
-      { name: "search", label: "Reference library lookup", detail: `Matched ${library.matched.join(", ") || "general guidance"}`, durationMs: lookupMs },
-      { name: "cite", label: "Citations", detail: `${library.sources.length} authorities cited by the library entry`, durationMs: 0 },
-      { name: "evaluate", label: "Confidence evaluation", detail: library.confidence, durationMs: 0 },
-    ];
+  if (!library) {
     return {
       question,
-      classification: library.classification,
-      summary: library.summary,
+      classification: { intent: "requirement-lookup", topics: [] },
+      summary: NOT_COVERED,
       blocks: [],
-      sources: library.sources,
+      sources: [],
       conflicts: [],
-      confidence: library.confidence,
-      confidenceRationale: library.confidenceRationale,
-      communityView,
-      pipeline,
+      confidence: "low",
+      confidenceRationale: "No reference library entry matched this question.",
+      communityView: await buildCommunityView(tokens, []),
+      pipeline: [{ name: "search", label: "Reference library lookup", detail: "No matching entry", durationMs: lookupMs }],
       mode: "library",
     };
   }
 
-  const demo = await runRegBotPipeline(question);
-  if (demo.blocks.length > 0) return demo;
+  // A scenario question that only mentions a term gets the definition plus a pointer, never an invented answer.
+  const summary = library.weakMatch ? `${library.summary}\n\n${SCENARIO_NOTE}` : library.summary;
+  const pipeline: PipelineStage[] = [
+    { name: "classify", label: "Query classification", detail: `Question type: ${library.kind}${library.weakMatch ? " (term mentioned in a scenario)" : ""}; topics: ${library.classification.topics.join(", ") || "none detected"}`, durationMs: 0 },
+    { name: "search", label: "Reference library lookup", detail: `Matched ${library.matched.join(", ") || "general guidance"}`, durationMs: lookupMs },
+    { name: "cite", label: "Citations", detail: `${library.sources.length} authorities cited by the library entry`, durationMs: 0 },
+    { name: "evaluate", label: "Confidence evaluation", detail: library.weakMatch ? "medium" : library.confidence, durationMs: 0 },
+  ];
 
-  const outOfScope = demo.classification.intent === "out-of-scope";
   return {
-    ...demo,
-    summary: outOfScope ? OUT_OF_SCOPE : NOT_COVERED,
-    confidence: "low",
-    confidenceRationale: outOfScope ? "The question is outside regulatory reporting topics." : "No reference library entry or demo passage matched this question.",
+    question,
+    classification: library.classification,
+    summary,
+    blocks: [],
+    sources: library.sources,
+    conflicts: [],
+    confidence: library.weakMatch ? "medium" : library.confidence,
+    confidenceRationale: library.weakMatch ? "The library defines the term but does not cover this specific scenario." : library.confidenceRationale,
+    communityView: await buildCommunityView(tokens, library.classification.topics),
+    pipeline,
     mode: "library",
   };
 }

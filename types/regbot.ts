@@ -80,8 +80,8 @@ export interface RegBotAnswer {
   confidenceRationale: string;
   communityView: CommunityView | null;
   pipeline: PipelineStage[];
-  /** "library" = prewritten reference answers; "mock" = demo corpus; "live" = Claude without retrieval. The UI must surface this. */
-  mode: "library" | "mock" | "live";
+  /** "library" = prewritten reference answers; "live" = Claude without retrieval. The UI must surface this. */
+  mode: "library" | "live";
 }
 
 export interface RegBotRequest {

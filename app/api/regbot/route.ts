@@ -16,7 +16,7 @@ const LIVE_HOURLY_LIMIT = 40;
 /**
  * POST /api/regbot  { question, sessionId? } → RegBotResponse
  *
- * Default (free): prewritten reference library, then the demo corpus. Optional
+ * Default (free): prewritten reference library. Optional
  * paid live mode (ANTHROPIC_API_KEY set) answers with Claude using the same specification.
  */
 export async function POST(request: Request) {
