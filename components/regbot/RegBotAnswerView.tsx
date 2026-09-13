@@ -1,0 +1,201 @@
+import clsx from "clsx";
+import Link from "next/link";
+import { SOURCE_TYPE_META } from "@/lib/constants";
+import { formatDate } from "@/lib/format";
+import type { Confidence, RegBotAnswer } from "@/types";
+import { ButtonLink } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
+import { DemoContentLabel, SourceBadge, SourceTypeLabel, TierIndicator } from "@/components/ui/SourceLabels";
+
+const CONFIDENCE_META: Record<Confidence, { label: string; bars: number; className: string }> = {
+  high: { label: "High", bars: 3, className: "bg-good" },
+  medium: { label: "Medium", bars: 2, className: "bg-signal" },
+  low: { label: "Low", bars: 1, className: "bg-bad" },
+};
+
+function RefMarks({ refs }: { refs: number[] }) {
+  return (
+    <>
+      {refs.map((r) => (
+        <a key={r} href={`#src-${r}`} className="ml-0.5 align-super font-mono text-[10px] font-semibold text-accent hover:underline">
+          [{r + 1}]
+        </a>
+      ))}
+    </>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h4 className="mb-2 font-mono text-2xs font-semibold uppercase tracking-widest text-muted">{children}</h4>;
+}
+
+export function ConfidenceMeter({ confidence, rationale }: { confidence: Confidence; rationale: string }) {
+  const meta = CONFIDENCE_META[confidence];
+  return (
+    <div className="flex items-start gap-3">
+      <div className="flex items-end gap-0.5 pt-0.5" aria-hidden>
+        {[1, 2, 3].map((n) => (
+          <span key={n} className={clsx("w-1.5 rounded-sm", n === 1 ? "h-2" : n === 2 ? "h-3" : "h-4", n <= meta.bars ? meta.className : "bg-line")} />
+        ))}
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-ink">{meta.label} confidence</p>
+        <p className="text-xs text-body">{rationale}</p>
+      </div>
+    </div>
+  );
+}
+
+export function RegBotAnswerView({ answer, turnId, onNavigate }: { answer: RegBotAnswer; turnId: string; onNavigate?: () => void }) {
+  const escalateHref = `/community/new?${new URLSearchParams({
+    title: answer.question.slice(0, 160),
+    from: "regbot",
+    ...(answer.classification.topics[0] ? { category: answer.classification.topics[0] } : {}),
+  }).toString()}`;
+
+  return (
+    <article className="overflow-hidden rounded-md border border-line bg-surface" aria-labelledby={`${turnId}-answer`}>
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-canvas/60 px-4 py-2">
+        <p id={`${turnId}-answer`} className="flex items-center gap-2 text-xs font-semibold text-ink">
+          <Icon name="bot" className="text-accent" />
+          RegBot research answer
+        </p>
+        {answer.mode === "mock" && (
+          <span className="inline-flex items-center gap-1 rounded border border-dashed border-signal/40 bg-signal-soft px-1.5 py-0.5 text-2xs font-medium text-signal" title="No live regulatory search or LLM is connected in Phase 1.">
+            <Icon name="info" className="h-3 w-3" />
+            Demo mode · fixed demo corpus, no live source search
+          </span>
+        )}
+      </header>
+
+      <div className="divide-y divide-line">
+        {/* Answer */}
+        <section className="px-4 py-4">
+          <SectionTitle>Answer</SectionTitle>
+          <p className="text-sm leading-relaxed text-ink">{answer.summary}</p>
+          {answer.blocks.length > 0 && (
+            <ul className="mt-4 space-y-3">
+              {answer.blocks.map((block, i) => (
+                <li key={i} className={clsx("rounded-md border-l-2 bg-canvas/50 py-2 pl-3 pr-3", SOURCE_TYPE_META[block.sourceType].borderClassName)}>
+                  <SourceTypeLabel type={block.sourceType} size="xs" />
+                  <p className="mt-1.5 text-sm leading-relaxed text-body">
+                    {block.text}
+                    <RefMarks refs={block.sourceRefs} />
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Conflicts */}
+        {answer.conflicts.length > 0 && (
+          <section className="bg-signal-soft/60 px-4 py-3" aria-label="Source conflicts">
+            <SectionTitle>Sources disagree</SectionTitle>
+            {answer.conflicts.map((c, i) => (
+              <p key={i} className="flex gap-2 text-sm text-body">
+                <Icon name="alert" className="mt-0.5 text-signal" />
+                <span>
+                  {c.summary}
+                  <RefMarks refs={c.sourceRefs} />
+                </span>
+              </p>
+            ))}
+          </section>
+        )}
+
+        {/* Sources */}
+        <section className="px-4 py-4">
+          <SectionTitle>Sources ({answer.sources.length})</SectionTitle>
+          {answer.sources.length === 0 ? (
+            <p className="text-sm text-muted">No trusted sources matched this question.</p>
+          ) : (
+            <ol className="space-y-2">
+              {answer.sources.map((s, i) => (
+                <li key={`${s.sourceDocumentId}-${i}`} id={`src-${i}`} className="grid scroll-mt-24 grid-cols-[1.75rem_1fr] gap-2 rounded-md border border-line px-3 py-2.5">
+                  <span className="font-mono text-xs font-semibold text-muted">[{i + 1}]</span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <SourceBadge name={s.sourceShortName} tier={s.tier} />
+                      <SourceTypeLabel type={s.sourceType} size="xs" />
+                      <TierIndicator tier={s.tier} />
+                      {s.isDemo && <DemoContentLabel compact />}
+                    </div>
+                    <p className="mt-1 text-sm font-medium text-ink">{s.title}</p>
+                    <p className="text-2xs text-muted">
+                      {s.locator} · Published <time dateTime={s.publishedAt}>{formatDate(s.publishedAt)}</time>
+                    </p>
+                    <a href={s.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-2xs font-medium text-accent hover:text-accent-strong">
+                      Open official source
+                      <Icon name="external" className="h-3 w-3" />
+                    </a>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+
+        {/* Confidence */}
+        <section className="px-4 py-4">
+          <SectionTitle>Confidence</SectionTitle>
+          <ConfidenceMeter confidence={answer.confidence} rationale={answer.confidenceRationale} />
+        </section>
+
+        {/* Community view — visually separated from sourced content */}
+        {answer.communityView && (
+          <section className="bg-st-comm-soft/50 px-4 py-4">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <SectionTitle>Community View</SectionTitle>
+              <SourceTypeLabel type="community-interpretation" size="xs" className="-mt-2" />
+            </div>
+            <p className="text-sm font-medium text-ink">Based on {answer.communityView.responseCount} community responses…</p>
+            <p className="mt-1 text-sm text-body">{answer.communityView.summary}</p>
+            <ul className="mt-2 space-y-1">
+              {answer.communityView.discussionSlugs.map((slug) => (
+                <li key={slug}>
+                  <Link href={`/community/${slug}`} onClick={onNavigate} className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-strong">
+                    <Icon name="message" className="h-3 w-3" />
+                    {slug.replace(/-/g, " ")}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-2xs text-st-comm">Member opinion only. It is not regulatory fact and has not been verified.</p>
+          </section>
+        )}
+
+        {/* Community + AI loop */}
+        <section className="flex flex-col items-start gap-3 bg-navy px-4 py-4 text-white">
+          <div>
+            <p className="text-sm font-semibold">Need a practitioner&apos;s view?</p>
+            <p className="text-xs text-slate-300">Turn this question into a discussion. Accepted answers can be reviewed into the Knowledge Base.</p>
+          </div>
+          <ButtonLink href={escalateHref} onClick={onNavigate} variant="primary" size="sm" icon="users">
+            Ask the Community
+          </ButtonLink>
+        </section>
+
+        {/* Pipeline transparency */}
+        <details className="group px-4 py-3">
+          <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted hover:text-ink">
+            <Icon name="chevronRight" className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+            How this answer was produced
+          </summary>
+          <ol className="mt-3 space-y-1.5">
+            {answer.pipeline.map((stage, i) => (
+              <li key={stage.name} className="grid grid-cols-[1.25rem_1fr_auto] items-baseline gap-2 text-xs">
+                <span className="font-mono text-2xs text-muted">{i + 1}</span>
+                <span>
+                  <span className="block font-medium text-ink">{stage.label}</span>
+                  <span className="block text-body">{stage.detail}</span>
+                </span>
+                <span className="font-mono text-2xs text-muted">{stage.durationMs}ms</span>
+              </li>
+            ))}
+          </ol>
+        </details>
+      </div>
+    </article>
+  );
+}

@@ -1,0 +1,51 @@
+{
+  "name": "regreporting-network",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "prisma migrate deploy && tsx scripts/setup-production.ts && next build",
+    "build:app": "next build",
+    "start": "next start",
+    "start:local": "next start -p 3100",
+    "db:deploy": "prisma migrate deploy",
+    "setup:production": "tsx scripts/setup-production.ts",
+    "admin:promote": "tsx scripts/promote-admin.ts",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset --force",
+    "db:studio": "prisma studio",
+    "ingest": "tsx scripts/ingest.ts",
+    "test": "tsx --test tests/*.test.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "clsx": "^2.1.1",
+    "fast-xml-parser": "^4.5.0",
+    "next": "14.2.35",
+    "nodemailer": "^6.9.16",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.0",
+    "@types/nodemailer": "^6.4.17",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.45",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.10",
+    "tsx": "^4.23.13",
+    "typescript": "^5.5.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,296 @@
+// PostgreSQL. Enum-like fields stay as strings validated in lib/validation.ts and
+// lib/services so domain values such as "pending-review" are stored verbatim.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String?
+  emailVerifiedAt DateTime?
+  role            String    @default("member") // member | moderator | admin
+  status          String    @default("active") // pending | active | suspended
+  suspendedAt     DateTime?
+  suspendedReason String?
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  profile          Profile?
+  sessions         Session[]
+  verifications    EmailVerification[]
+  discussions      Discussion[]
+  comments         Comment[]
+  discussionVotes  DiscussionVote[]
+  commentVotes     CommentVote[]
+  savedDiscussions SavedDiscussion[]
+  follows          UserFollow[]
+  notifications    Notification[]
+  reports          ContentReport[]
+  auditLogs        AuditLog[]
+}
+
+model Profile {
+  userId               String   @id
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  handle               String   @unique
+  displayName          String
+  jobTitle             String
+  organisationName     String
+  organisationType     String
+  yearsExperience      Int
+  location             String   @default("")
+  bio                  String   @default("")
+  expertise            String[] @default([])
+  verifiedPractitioner Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerification {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
+
+/// Log of every email. Bodies are only kept when the message was NOT delivered via SMTP (development mailbox).
+model OutboundEmail {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  body      String   @default("")
+  status    String   @default("logged") // logged | sent | failed
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model Discussion {
+  id                String    @id @default(cuid())
+  slug              String    @unique
+  title             String
+  body              String
+  authorId          String
+  author            User      @relation(fields: [authorId], references: [id])
+  category          String
+  tags              String[]  @default([])
+  status            String    @default("published") // published | pending-review | removed
+  origin            String    @default("member")
+  viewCount         Int       @default(0)
+  voteScore         Int       @default(0)
+  replyCount        Int       @default(0)
+  acceptedCommentId String?
+  removedAt         DateTime?
+  removedReason     String?
+  createdAt         DateTime  @default(now())
+  lastActivityAt    DateTime  @default(now())
+
+  comments Comment[]
+  votes    DiscussionVote[]
+  saves    SavedDiscussion[]
+
+  @@index([status, category])
+  @@index([authorId])
+  @@index([lastActivityAt])
+}
+
+model Comment {
+  id                     String     @id @default(cuid())
+  discussionId           String
+  discussion             Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  parentId               String?
+  authorId               String
+  author                 User       @relation(fields: [authorId], references: [id])
+  body                   String
+  voteScore              Int        @default(0)
+  isAccepted             Boolean    @default(false)
+  knowledgeBaseCandidate Boolean    @default(false)
+  status                 String     @default("published") // published | removed
+  removedAt              DateTime?
+  removedReason          String?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  votes CommentVote[]
+
+  @@index([discussionId, createdAt])
+  @@index([authorId])
+}
+
+model DiscussionVote {
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discussionId String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  value        Int        @default(1)
+  createdAt    DateTime   @default(now())
+
+  @@id([userId, discussionId])
+}
+
+model CommentVote {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  value     Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@id([userId, commentId])
+}
+
+model SavedDiscussion {
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discussionId String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([userId, discussionId])
+}
+
+model UserFollow {
+  id         String   @id @default(cuid())
+  followerId String
+  follower   User     @relation(fields: [followerId], references: [id], onDelete: Cascade)
+  targetType String // user | discussion | source | topic
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([followerId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  href      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model ContentReport {
+  id           String    @id @default(cuid())
+  targetType   String // discussion | comment | profile
+  targetId     String
+  reporterId   String
+  reporter     User      @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  reason       String
+  detail       String    @default("")
+  status       String    @default("open") // open | actioned | dismissed
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolution   String?
+  createdAt    DateTime  @default(now())
+
+  @@unique([reporterId, targetType, targetId])
+  @@index([status, createdAt])
+}
+
+/// Regulatory updates — ingested from official feeds or entered by an admin. Nothing is public until approved.
+model RegulatoryUpdate {
+  id             String    @id @default(cuid())
+  sourceId       String // key into the trusted-source registry (data/sources.ts)
+  title          String
+  summary        String
+  category       String
+  topics         String[]  @default([])
+  jurisdiction   String
+  publishedAt    DateTime
+  originalUrl    String    @unique
+  severity       String    @default("standard") // critical | high | standard
+  isAlert        Boolean   @default(false)
+  status         String    @default("pending-review") // pending-review | published | rejected | archived
+  isDemo         Boolean   @default(false)
+  relevanceScore Int       @default(0)
+  ingestedFrom   String?
+  externalId     String?
+  reviewedById   String?
+  reviewedAt     DateTime?
+  reviewNote     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([sourceId, publishedAt])
+}
+
+model SourceFeed {
+  id            String    @id
+  sourceId      String
+  label         String
+  url           String
+  enabled       Boolean   @default(true)
+  lastFetchedAt DateTime?
+  lastStatus    String? // ok | error
+  lastError     String?
+  lastItemCount Int       @default(0)
+
+  runs IngestionRun[]
+}
+
+model IngestionRun {
+  id            String     @id @default(cuid())
+  feedId        String
+  feed          SourceFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  status        String     @default("running") // running | ok | error
+  triggeredById String?
+  fetched       Int        @default(0)
+  pending       Int        @default(0)
+  archived      Int        @default(0)
+  duplicates    Int        @default(0)
+  skippedOld    Int        @default(0)
+  rejected      Int        @default(0)
+  error         String?
+  startedAt     DateTime   @default(now())
+  finishedAt    DateTime?
+
+  @@index([feedId, startedAt])
+}
+
+/// Every staff action (approvals, removals, suspensions, role changes).
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String
+  targetId   String
+  detail     String   @default("")
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([targetType, targetId])
+}
