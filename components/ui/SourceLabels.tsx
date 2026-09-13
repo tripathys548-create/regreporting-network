@@ -49,13 +49,22 @@ export function TierIndicator({ tier }: { tier: SourceTier }) {
 }
 
 export function DemoContentLabel({ className, compact }: { className?: string; compact?: boolean }) {
+  const description = "Sample content for demonstration. It does not describe a real publication or requirement — verify against the official source.";
+  if (compact) {
+    return (
+      <span title={description} className={clsx("inline-flex items-center gap-1 rounded border border-dashed border-signal/40 bg-signal-soft px-1.5 py-0.5 text-2xs font-medium text-signal", className)}>
+        <Icon name="info" className="h-3 w-3" />
+        Demo
+      </span>
+    );
+  }
+  // Full label is the legal disclaimer for a page or article, so it is sized to be read, not skimmed past.
   return (
-    <span
-      title="Sample content for demonstration. It does not describe a real publication or requirement — verify against the official source."
-      className={clsx("inline-flex items-center gap-1 rounded border border-dashed border-signal/40 bg-signal-soft px-1.5 py-0.5 text-2xs font-medium text-signal", className)}
-    >
-      <Icon name="info" className="h-3 w-3" />
-      {compact ? "Demo" : "Example / Demo Content"}
-    </span>
+    <p role="note" className={clsx("flex max-w-2xl items-start gap-2 rounded-md border border-signal/40 bg-signal-soft px-3 py-2 text-xs text-signal", className)}>
+      <Icon name="alert" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>
+        <strong className="font-semibold">Example / Demo Content.</strong> Sample material for illustration only — it does not describe a real publication or requirement and is not legal or regulatory advice. Always verify against the official source.
+      </span>
+    </p>
   );
 }

@@ -10,7 +10,8 @@ const config: Config = {
         line: "#E2E5EA",
         ink: "#0E1726",
         body: "#3D4757",
-        muted: "#6B7385",
+        // Darkened from #6B7385 (4.76:1) to keep small metadata text comfortably above WCAG AA on white.
+        muted: "#5A6272",
         navy: { DEFAULT: "#0B1A2E", 2: "#132640", 3: "#1E3350" },
         accent: { DEFAULT: "#1D5FAF", soft: "#EAF1FA", strong: "#154A8A" },
         signal: { DEFAULT: "#B45309", soft: "#FDF3E4" },

@@ -19,7 +19,6 @@ export const PRIMARY_NAV = [
   { href: "/radar", label: "Regulatory Radar" },
   { href: "/community", label: "Community" },
   { href: "/knowledge", label: "Knowledge Base" },
-  { href: "/regbot", label: "RegBot" },
   { href: "/challenges", label: "Challenges" },
 ] as const;
 

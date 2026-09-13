@@ -7,12 +7,9 @@ import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { PRIMARY_NAV, SECONDARY_NAV, SITE_NAME } from "@/lib/constants";
 import type { Notification } from "@/types";
 import { RegWorldEmblem, RegWorldWordmark } from "@/components/brand/RegWorldLogo";
-import { useRegBotPanel } from "@/components/regbot/RegBotProvider";
 import { Icon } from "@/components/ui/Icon";
 import { NotificationBell } from "./NotificationBell";
 import { UserMenu, type HeaderViewer } from "./UserMenu";
-
-const REGBOT_HREF = "/regbot";
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -61,7 +58,6 @@ function SearchBox({ className, onSubmitted }: { className?: string; onSubmitted
 export function AppHeader({ viewer, notifications }: { viewer: HeaderViewer | null; notifications: Notification[] }) {
   const pathname = usePathname() ?? "/";
   const [mobileOpen, setMobileOpen] = useState(false);
-  const regbot = useRegBotPanel();
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
@@ -79,18 +75,11 @@ export function AppHeader({ viewer, notifications }: { viewer: HeaderViewer | nu
         <Logo />
 
         <nav aria-label="Primary" className="hidden h-full items-stretch lg:flex">
-          {PRIMARY_NAV.map((item) =>
-            item.href === REGBOT_HREF ? (
-              <button key={item.href} type="button" onClick={() => regbot.open()} aria-controls="regbot-panel" aria-expanded={regbot.isOpen} className={desktopItem(regbot.isOpen)}>
-                <Icon name="bot" className="h-3.5 w-3.5" />
-                {item.label}
-              </button>
-            ) : (
-              <Link key={item.href} href={item.href} aria-current={isActive(pathname, item.href) ? "page" : undefined} className={desktopItem(isActive(pathname, item.href))}>
-                {item.label}
-              </Link>
-            ),
-          )}
+          {PRIMARY_NAV.map((item) => (
+            <Link key={item.href} href={item.href} aria-current={isActive(pathname, item.href) ? "page" : undefined} className={desktopItem(isActive(pathname, item.href))}>
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="ml-auto flex items-center gap-1.5">
@@ -137,23 +126,9 @@ export function AppHeader({ viewer, notifications }: { viewer: HeaderViewer | nu
           <ul className="grid gap-0.5">
             {[...PRIMARY_NAV, ...SECONDARY_NAV].map((item) => (
               <li key={item.href}>
-                {item.href === REGBOT_HREF ? (
-                  <button
-                    type="button"
-                    className={mobileItem(false)}
-                    onClick={() => {
-                      setMobileOpen(false);
-                      regbot.open();
-                    }}
-                  >
-                    <Icon name="bot" className="h-4 w-4" />
-                    {item.label}
-                  </button>
-                ) : (
-                  <Link href={item.href} aria-current={isActive(pathname, item.href) ? "page" : undefined} className={mobileItem(isActive(pathname, item.href))}>
-                    {item.label}
-                  </Link>
-                )}
+                <Link href={item.href} aria-current={isActive(pathname, item.href) ? "page" : undefined} className={mobileItem(isActive(pathname, item.href))}>
+                  {item.label}
+                </Link>
               </li>
             ))}
           </ul>

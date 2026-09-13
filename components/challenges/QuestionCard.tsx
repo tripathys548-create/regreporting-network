@@ -110,7 +110,7 @@ export function QuestionCard({ question, references, onAnswered, previousSelecti
 
       {!submitted ? (
         <div className="flex items-center justify-between gap-3">
-          {question.isDemo ? <DemoContentLabel /> : <span />}
+          {question.isDemo ? <DemoContentLabel compact /> : <span />}
           <Button type="submit" variant="primary" disabled={!selected}>
             Submit answer
           </Button>
@@ -134,7 +134,7 @@ export function QuestionCard({ question, references, onAnswered, previousSelecti
               </ul>
             </div>
           )}
-          {question.isDemo && <DemoContentLabel className="mt-3" />}
+          {question.isDemo && <DemoContentLabel compact className="mt-3" />}
           {footer && <div className="mt-3">{footer}</div>}
         </div>
       )}

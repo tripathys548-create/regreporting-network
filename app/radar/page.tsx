@@ -5,7 +5,7 @@ import { RegulatorySourceCard } from "@/components/radar/RegulatorySourceCard";
 import { UpdateRow } from "@/components/radar/UpdateRow";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
-import { DemoContentLabel, SourceTypeLabel } from "@/components/ui/SourceLabels";
+import { SourceTypeLabel } from "@/components/ui/SourceLabels";
 import { EmptyState } from "@/components/ui/States";
 import { ButtonLink } from "@/components/ui/Button";
 import { SOURCE_TYPE_ORDER, TIER_LABEL } from "@/lib/constants";
@@ -30,7 +30,6 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
         eyebrow="Official sources"
         title="Regulatory Radar"
         description="The latest publications from regulators, standard setters and industry bodies, labelled by source and linked to the original page."
-        meta={<DemoContentLabel />}
         actions={
           <ButtonLink href="/timeline" icon="calendar">
             Regulatory timeline
@@ -106,7 +105,7 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
             </ul>
           </Panel>
           <p className="px-1 text-2xs leading-relaxed text-muted">
-            Phase 1 shows sample updates. &ldquo;Read original source&rdquo; links go to each publisher&apos;s official website until ingestion supplies verified deep links.
+            Updates are collected from official publisher feeds and published only after editorial review. Each update links to the original publication.
           </p>
         </aside>
       </div>

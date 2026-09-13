@@ -15,9 +15,9 @@ export function SiteFooter() {
             </div>
           </div>
           <p className="mt-4 max-w-xl leading-relaxed">
-            Phase 1 preview. Regulatory updates, knowledge articles, challenge questions and RegBot answers are{" "}
-            <strong className="font-semibold text-signal">Example / Demo Content</strong> and must not be relied upon. Nothing on this platform is legal or
-            regulatory advice. Always consult the official source.
+            Regulatory updates come from official publisher feeds and are published after editorial review. Knowledge articles, challenge questions and timeline
+            milestones are <strong className="font-semibold text-signal">Example / Demo Content</strong> and must not be relied upon. RegBot gives prewritten
+            reference answers. Nothing on this platform is legal or regulatory advice. Always consult the official source.
           </p>
         </div>
         <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 gap-y-1.5 self-start">

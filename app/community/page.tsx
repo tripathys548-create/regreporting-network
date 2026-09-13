@@ -73,16 +73,20 @@ export default async function CommunityPage({ searchParams }: { searchParams: Se
         </Panel>
 
         <aside className="min-w-0 space-y-6">
-          <Panel title="Most Discussed This Week" icon="flame" bodyClassName="p-0">
-            <ul className="divide-y divide-line">
-              {mostDiscussed.map((d) => (
-                <DiscussionRow key={d.id} discussion={d} variant="compact" />
-              ))}
-            </ul>
-          </Panel>
-          <Panel title="Most Helpful Contributors" icon="users" bodyClassName="p-0">
-            <ContributorList profiles={contributors} />
-          </Panel>
+          {mostDiscussed.length > 0 && (
+            <Panel title="Most Discussed This Week" icon="flame" bodyClassName="p-0">
+              <ul className="divide-y divide-line">
+                {mostDiscussed.map((d) => (
+                  <DiscussionRow key={d.id} discussion={d} variant="compact" />
+                ))}
+              </ul>
+            </Panel>
+          )}
+          {contributors.length > 0 && (
+            <Panel title="Most Helpful Contributors" icon="users" bodyClassName="p-0">
+              <ContributorList profiles={contributors} />
+            </Panel>
+          )}
           <Panel title="Community standards" icon="shield">
             <ul className="space-y-2 text-xs text-body">
               {[
