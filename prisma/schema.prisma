@@ -23,20 +23,27 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  profile          Profile?
-  sessions         Session[]
-  verifications    EmailVerification[]
-  discussions      Discussion[]
-  comments         Comment[]
-  discussionVotes  DiscussionVote[]
-  commentVotes     CommentVote[]
-  savedDiscussions SavedDiscussion[]
-  follows          UserFollow[]
-  notifications    Notification[]
-  reports          ContentReport[]
-  auditLogs        AuditLog[]
-  suggestions      Suggestion[]
-  suggestionVotes  SuggestionVote[]
+  /// Set once, the first time the one-time welcome email is sent after signup. Guards against
+  /// re-sending on login, profile updates or re-verification; an admin resend bypasses the guard.
+  welcomeEmailSentAt    DateTime?
+  welcomeEmailSentCount Int       @default(0)
+
+  profile                    Profile?
+  sessions                   Session[]
+  verifications              EmailVerification[]
+  discussions                Discussion[]
+  comments                   Comment[]
+  discussionVotes            DiscussionVote[]
+  commentVotes               CommentVote[]
+  savedDiscussions           SavedDiscussion[]
+  follows                    UserFollow[]
+  notifications              Notification[]
+  reports                    ContentReport[]
+  auditLogs                  AuditLog[]
+  suggestions                Suggestion[]
+  suggestionVotes            SuggestionVote[]
+  newsletterSubscriptions    NewsletterSubscription[]
+  newsletterCampaignsCreated NewsletterCampaign[]
 }
 
 model Profile {
@@ -82,15 +89,111 @@ model EmailVerification {
 
 /// Log of every email. Bodies are only kept when the message was NOT delivered via SMTP (development mailbox).
 model OutboundEmail {
-  id        String   @id @default(cuid())
-  to        String
-  subject   String
-  body      String   @default("")
-  status    String   @default("logged") // logged | sent | failed
-  error     String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  to         String
+  subject    String
+  body       String   @default("")
+  status     String   @default("logged") // logged | sent | failed
+  error      String?
+  /// welcome | verification | newsletter-confirmation | newsletter-campaign | other — lets admin
+  /// analytics filter sent/delivered/failed counts per email type without matching on subject text.
+  category   String   @default("other")
+  campaignId String?
+  createdAt  DateTime @default(now())
 
   @@index([createdAt])
+  @@index([category, createdAt])
+  @@index([campaignId])
+}
+
+/// A newsletter subscription, independent of account creation (item 22: account creation must
+/// never imply marketing consent). Linked to a User when the subscriber is a member; anonymous
+/// subscribers keep userId null. Double opt-in: status stays "pending" until the confirmation
+/// link is clicked.
+model NewsletterSubscription {
+  id     String  @id @default(cuid())
+  email  String  @unique
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  status        String @default("pending") // pending | active | unsubscribed
+  consentSource String // signup | homepage | footer | regulatory-radar | knowledge-base | challenges | admin
+
+  subscribedAt   DateTime  @default(now())
+  confirmedAt    DateTime?
+  unsubscribedAt DateTime?
+
+  /// Single-use, time-limited: consumed (nulled) once the double opt-in link is clicked.
+  confirmationTokenHash      String?   @unique
+  confirmationTokenExpiresAt DateTime?
+
+  // The one-click unsubscribe link needs to work indefinitely across every future campaign send,
+  // so unlike the confirmation token it is not stored at all — it's an HMAC of this row's id under
+  // AUTH_SECRET (lib/newsletter/tokens.ts), recomputed on demand and never persisted.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events NewsletterEvent[]
+
+  @@index([status])
+  @@index([userId])
+}
+
+/// Admin-authored weekly newsletter content and send lifecycle.
+model NewsletterCampaign {
+  id          String @id @default(cuid())
+  title       String
+  subject     String
+  previewText String @default("")
+
+  introText          String @default("")
+  radarHighlight     String @default("")
+  knowledgeHighlight String @default("")
+  challengeHighlight String @default("")
+  communityHighlight String @default("")
+  milestoneHighlight String @default("")
+  ctaLabel           String @default("Visit RegWorld")
+  ctaUrl             String @default("/")
+
+  status      String    @default("draft") // draft | scheduled | sent
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  sentCount   Int       @default(0)
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events NewsletterEvent[]
+
+  @@index([status, createdAt])
+}
+
+/// Self-hosted open/click tracking, independent of the SMTP provider (which has no webhooks).
+model NewsletterEvent {
+  id             String                 @id @default(cuid())
+  campaignId     String
+  campaign       NewsletterCampaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subscriptionId String
+  subscription   NewsletterSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  type           String // sent | opened | clicked
+  url            String?
+  createdAt      DateTime               @default(now())
+
+  @@index([campaignId, type])
+  @@index([subscriptionId])
+}
+
+/// Singleton row (fixed id) controlling automatic weekly sending. Admin must explicitly enable it.
+model NewsletterSettings {
+  id        String   @id @default("singleton")
+  enabled   Boolean  @default(false)
+  sendDay   Int      @default(1) // 0 = Sunday .. 6 = Saturday
+  sendTime  String   @default("09:00") // HH:mm, UTC
+  updatedAt DateTime @updatedAt
 }
 
 model Discussion {
@@ -303,20 +406,20 @@ model AuditLog {
 /// Raw security telemetry: auth failures, rate-limit trips, abuse-pattern hits, etc.
 /// Never store secrets, tokens, or full request bodies here — see lib/security/logger.ts.
 model SecurityEvent {
-  id          String    @id @default(cuid())
-  requestId   String
-  eventType   String // e.g. MULTIPLE_LOGIN_FAILURES, RATE_LIMIT_EXCEEDED, REGBOT_ABUSE, SSRF_BLOCKED
-  category    String // authentication | api-abuse | regbot-abuse | community-abuse | admin-security | infrastructure | data-security | application-error
-  severity    String // low | medium | high | critical
-  riskScore   Int       @default(0)
-  route       String    @default("")
-  ip          String    @default("")
-  userId      String?
-  detail      String    @default("") // short, non-sensitive summary only
-  status      String    @default("open") // open | reviewed | resolved
+  id           String   @id @default(cuid())
+  requestId    String
+  eventType    String // e.g. MULTIPLE_LOGIN_FAILURES, RATE_LIMIT_EXCEEDED, REGBOT_ABUSE, SSRF_BLOCKED
+  category     String // authentication | api-abuse | regbot-abuse | community-abuse | admin-security | infrastructure | data-security | application-error
+  severity     String // low | medium | high | critical
+  riskScore    Int      @default(0)
+  route        String   @default("")
+  ip           String   @default("")
+  userId       String?
+  detail       String   @default("") // short, non-sensitive summary only
+  status       String   @default("open") // open | reviewed | resolved
   reviewedById String?
-  reviewNote  String?
-  createdAt   DateTime  @default(now())
+  reviewNote   String?
+  createdAt    DateTime @default(now())
 
   @@index([createdAt])
   @@index([eventType, createdAt])
@@ -327,18 +430,18 @@ model SecurityEvent {
 /// Aggregated alert surfaced to admins — one row can represent many underlying
 /// SecurityEvent rows (see lib/security/alerts.ts dedup/aggregation window).
 model SecurityAlert {
-  id           String    @id @default(cuid())
-  category     String
-  severity     String
-  title        String
-  summary      String
-  occurrences  Int       @default(1)
-  firstSeenAt  DateTime  @default(now())
-  lastSeenAt   DateTime  @default(now())
-  status       String    @default("open") // open | investigating | resolved | escalated
-  assignedToId String?
+  id             String   @id @default(cuid())
+  category       String
+  severity       String
+  title          String
+  summary        String
+  occurrences    Int      @default(1)
+  firstSeenAt    DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  status         String   @default("open") // open | investigating | resolved | escalated
+  assignedToId   String?
   resolutionNote String?
-  createdAt    DateTime  @default(now())
+  createdAt      DateTime @default(now())
 
   @@index([status, severity, createdAt])
   @@index([category, lastSeenAt])
@@ -362,24 +465,24 @@ model SecurityRestriction {
 
 /// User-submitted improvement/bug suggestions, including the "Security" category.
 model Suggestion {
-  id            String    @id @default(cuid())
-  authorId      String
-  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  title         String
-  description   String
-  category      String // feature | bug | security | content | other
-  priority      String    @default("normal") // low | normal | high
-  relatedPage   String    @default("")
-  screenshotUrl String?
-  severity      String? // security category only: low | medium | high | critical
-  stepsToReproduce String @default("")
-  status        String    @default("open") // open | planned | in-progress | shipped | declined
-  ownerId       String?
-  adminNotes    String    @default("")
-  targetRelease String    @default("")
-  voteCount     Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id               String   @id @default(cuid())
+  authorId         String
+  author           User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title            String
+  description      String
+  category         String // feature | bug | security | content | other
+  priority         String   @default("normal") // low | normal | high
+  relatedPage      String   @default("")
+  screenshotUrl    String?
+  severity         String? // security category only: low | medium | high | critical
+  stepsToReproduce String   @default("")
+  status           String   @default("open") // open | planned | in-progress | shipped | declined
+  ownerId          String?
+  adminNotes       String   @default("")
+  targetRelease    String   @default("")
+  voteCount        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   votes SuggestionVote[]
 

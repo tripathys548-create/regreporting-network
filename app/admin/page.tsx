@@ -2,6 +2,8 @@ import clsx from "clsx";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminAction } from "@/components/admin/AdminAction";
+import { NewsletterCampaignRow, NewsletterComposer } from "@/components/admin/NewsletterCampaignEditor";
+import { NewsletterSettingsForm } from "@/components/admin/NewsletterSettingsForm";
 import { RoleSelect } from "@/components/admin/RoleSelect";
 import { RunIngestionButton } from "@/components/admin/RunIngestionButton";
 import { EditUpdateToggle, ManualUpdateForm } from "@/components/admin/UpdateEditor";
@@ -32,6 +34,7 @@ import {
   type AdminSection,
   type UpdateQueue,
 } from "@/lib/repositories/admin";
+import { getCampaignStats, getNewsletterAdminOverview, getNewsletterSettings, getWelcomeEmailStats, listNewsletterCampaigns, newsletterEmailConfigured } from "@/lib/repositories/newsletter";
 
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -353,6 +356,7 @@ async function UsersSection({ viewerId, isAdmin }: { viewerId: string; isAdmin: 
                 )}
               </p>
               {u.suspendedReason && <p className="mt-1 text-2xs text-bad">Suspended: {u.suspendedReason}</p>}
+              <p className="mt-1 text-2xs text-muted">Welcome email last sent: {u.welcomeEmailSentAt ? formatDate(u.welcomeEmailSentAt) : "never"}</p>
             </div>
             {!self && (
               <div className="flex flex-wrap items-start gap-1.5">
@@ -366,6 +370,7 @@ async function UsersSection({ viewerId, isAdmin }: { viewerId: string; isAdmin: 
                 ) : (
                   u.role !== "admin" && <AdminAction endpoint={endpoint} body={{ action: "suspend" }} label="Suspend" icon="lock" variant="ghost" reasonPrompt="Reason (emailed to the member)" />
                 )}
+                <AdminAction endpoint={endpoint} body={{ action: "resend-welcome" }} label="Resend welcome email" icon="mail" variant="ghost" confirm={`Resend the welcome email to ${u.displayName}?`} />
                 {isAdmin && <RoleSelect userId={u.id} role={u.role} />}
               </div>
             )}
@@ -524,6 +529,73 @@ async function SuggestionsSection() {
   );
 }
 
+function StatTile({ label, value, tone }: { label: string; value: number | string; tone?: "bad" | "good" }) {
+  return (
+    <div className="rounded-md border border-line bg-canvas p-3">
+      <p className="text-2xs uppercase tracking-wide text-muted">{label}</p>
+      <p className={clsx("font-mono text-xl font-semibold", tone === "bad" ? "text-bad" : tone === "good" ? "text-good" : "text-ink")}>{value}</p>
+    </div>
+  );
+}
+
+async function NewsletterSection({ isAdmin, adminEmail }: { isAdmin: boolean; adminEmail: string }) {
+  const [overview, welcomeStats, settings, campaigns, emailConfigured] = await Promise.all([
+    getNewsletterAdminOverview(),
+    getWelcomeEmailStats(),
+    getNewsletterSettings(),
+    listNewsletterCampaigns(),
+    Promise.resolve(newsletterEmailConfigured()),
+  ]);
+  const statsByCampaign = new Map(await Promise.all(campaigns.map(async (c) => [c.id, await getCampaignStats(c.id)] as const)));
+
+  return (
+    <div className="space-y-6 p-4">
+      {!emailConfigured && <Badge tone="signal">SMTP not configured — emails are logged to /dev/mailbox instead of delivered</Badge>}
+
+      <div>
+        <h3 className="mb-2 text-xs font-semibold text-ink">Subscribers</h3>
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <StatTile label="Active subscriptions" value={overview.activeSubscribers} tone="good" />
+          <StatTile label="Pending confirmations" value={overview.pendingConfirmations} />
+          <StatTile label="Unsubscribed" value={overview.unsubscribed} />
+          <StatTile label="New this week" value={overview.newThisWeek} tone="good" />
+          <StatTile label="Unsubscribes this week" value={overview.unsubscribesThisWeek} tone={overview.unsubscribesThisWeek > 0 ? "bad" : undefined} />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-xs font-semibold text-ink">Welcome emails</h3>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StatTile label="Sent" value={welcomeStats.sent} />
+          <StatTile label="Delivered" value={welcomeStats.delivered} tone="good" />
+          <StatTile label="Failed" value={welcomeStats.failed} tone={welcomeStats.failed > 0 ? "bad" : undefined} />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-xs font-semibold text-ink">Automatic weekly sending</h3>
+        <NewsletterSettingsForm settings={settings} isAdmin={isAdmin} />
+      </div>
+
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-xs font-semibold text-ink">Campaigns</h3>
+          <NewsletterComposer />
+        </div>
+        {campaigns.length === 0 ? (
+          <EmptyState icon="mail" title="No newsletters yet" description="Create a draft to get started." />
+        ) : (
+          <ul className="divide-y divide-line rounded-md border border-line bg-surface">
+            {campaigns.map((c) => (
+              <NewsletterCampaignRow key={c.id} campaign={c} stats={statsByCampaign.get(c.id)!} adminEmail={adminEmail} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 async function AuditSection() {
   const rows = await listAuditLog();
   if (rows.length === 0) return <EmptyState icon="layers" title="No staff actions yet" />;
@@ -597,6 +669,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
       break;
     case "suggestions":
       content = <SuggestionsSection />;
+      break;
+    case "newsletter":
+      content = <NewsletterSection isAdmin={isAdmin} adminEmail={session.user.email} />;
       break;
     default:
       content = <EmptyState icon="settings" title="Management tools coming soon" description={active.description} />;

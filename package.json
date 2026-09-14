@@ -19,6 +19,7 @@
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
     "ingest": "tsx scripts/ingest.ts",
+    "newsletter:dispatch": "tsx scripts/send-scheduled-newsletter.ts",
     "test": "tsx --test tests/*.test.ts"
   },
   "prisma": {

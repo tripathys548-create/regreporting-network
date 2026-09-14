@@ -108,7 +108,7 @@ export function validateSignup(input: unknown): ValidationResult<SignupInput> {
   if (raw.acceptGuidelines !== true) (errors as Record<string, string>).acceptGuidelines = "You must accept the community standards.";
 
   if (Object.keys(errors).length > 0) return { ok: false, errors: errors as FieldErrors<SignupInput> };
-  return { ok: true, value: { ...profile, email, password } };
+  return { ok: true, value: { ...profile, email, password, newsletterOptIn: raw.newsletterOptIn === true } };
 }
 
 export function validateLogin(input: unknown): ValidationResult<{ email: string; password: string }> {

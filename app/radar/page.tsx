@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { RegulatorySourceCard } from "@/components/radar/RegulatorySourceCard";
 import { UpdateRow } from "@/components/radar/UpdateRow";
+import { NewsletterCTA } from "@/components/newsletter/NewsletterCTA";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { SourceTypeLabel } from "@/components/ui/SourceLabels";
@@ -107,6 +108,8 @@ export default async function RadarPage({ searchParams }: { searchParams: Search
           <p className="px-1 text-2xs leading-relaxed text-muted">
             Updates are collected from official publisher feeds and published only after editorial review. Each update links to the original publication.
           </p>
+
+          <NewsletterCTA source="regulatory-radar" />
         </aside>
       </div>
     </>

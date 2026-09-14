@@ -5,8 +5,9 @@ import { prisma } from "@/lib/db";
 import { emailDeliveryConfigured } from "@/lib/email/mailer";
 import type { ContentReport, RegulatoryUpdate, UserRole } from "@/types";
 import { initialsFor, toContentReport, toRegulatoryUpdate } from "./mappers";
+import { getNewsletterAdminOverview } from "./newsletter";
 
-export type AdminSection = "updates" | "sources" | "reports" | "moderation" | "users" | "audit" | "knowledge" | "challenges" | "security" | "suggestions";
+export type AdminSection = "updates" | "sources" | "reports" | "moderation" | "users" | "audit" | "knowledge" | "challenges" | "security" | "suggestions" | "newsletter";
 
 export interface AdminSectionSummary {
   id: AdminSection;
@@ -22,7 +23,7 @@ export interface AdminSectionSummary {
 const DAY_MS = 86_400_000;
 
 export async function getAdminOverview(): Promise<AdminSectionSummary[]> {
-  const [updates, pendingUpdates, feeds, failingFeeds, reports, openReports, removed, users, unverified, audit, securityEvents, openAlerts, suggestions, openSuggestions] = await Promise.all([
+  const [updates, pendingUpdates, feeds, failingFeeds, reports, openReports, removed, users, unverified, audit, securityEvents, openAlerts, suggestions, openSuggestions, newsletterOverview] = await Promise.all([
     prisma.regulatoryUpdate.count(),
     prisma.regulatoryUpdate.count({ where: { status: "pending-review" } }),
     prisma.sourceFeed.count(),
@@ -37,6 +38,7 @@ export async function getAdminOverview(): Promise<AdminSectionSummary[]> {
     prisma.securityAlert.count({ where: { status: "open" } }),
     prisma.suggestion.count(),
     prisma.suggestion.count({ where: { status: "open" } }),
+    getNewsletterAdminOverview(),
   ]);
 
   return [
@@ -47,6 +49,15 @@ export async function getAdminOverview(): Promise<AdminSectionSummary[]> {
     { id: "users", label: "Members", description: "Suspensions, practitioner verification and roles.", total: users, needsAttention: unverified, attentionLabel: "pending or suspended", staff: true },
     { id: "security", label: "Security Center", description: "Threat level, security events, alerts and protection controls.", total: securityEvents, needsAttention: openAlerts, attentionLabel: "open alerts", staff: false },
     { id: "audit", label: "Audit Log", description: "Every staff action.", total: audit, needsAttention: 0, attentionLabel: "in the last 7 days", staff: true },
+    {
+      id: "newsletter",
+      label: "Newsletter",
+      description: "Welcome emails, subscribers and the weekly newsletter.",
+      total: newsletterOverview.activeSubscribers,
+      needsAttention: newsletterOverview.pendingConfirmations,
+      attentionLabel: "pending confirmation",
+      staff: true,
+    },
     { id: "suggestions", label: "Suggestions", description: "Improvement and bug suggestions from members.", total: suggestions, needsAttention: openSuggestions, attentionLabel: "open", staff: true },
     { id: "knowledge", label: "Knowledge Base", description: "Reference articles. In-app editing is not available yet.", total: ARTICLES.length, needsAttention: ARTICLES.filter((a) => a.isDemo).length, attentionLabel: "not yet verified against sources", staff: false },
     { id: "challenges", label: "Challenges", description: "Practice questions. In-app editing is not available yet.", total: CHALLENGES.length, needsAttention: QUESTIONS.filter((q) => q.isDemo).length, attentionLabel: "not yet verified against sources", staff: false },
@@ -223,6 +234,7 @@ export interface AdminUserRow {
   verifiedPractitioner: boolean;
   createdAt: string;
   lastLoginAt: string | null;
+  welcomeEmailSentAt: string | null;
 }
 
 export async function listUsersForAdmin(): Promise<AdminUserRow[]> {
@@ -243,6 +255,7 @@ export async function listUsersForAdmin(): Promise<AdminUserRow[]> {
     verifiedPractitioner: u.profile?.verifiedPractitioner ?? false,
     createdAt: u.createdAt.toISOString(),
     lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
+    welcomeEmailSentAt: u.welcomeEmailSentAt?.toISOString() ?? null,
   }));
 }
 

@@ -19,6 +19,7 @@ export function SignupForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptGuidelines, setAcceptGuidelines] = useState(false);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [website, setWebsite] = useState(""); // honeypot
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export function SignupForm() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const payload = { ...profile, email, password, acceptGuidelines };
+    const payload = { ...profile, email, password, acceptGuidelines, newsletterOptIn };
     const check = validateSignup(payload);
     if (!check.ok) {
       setErrors(check.errors as Record<string, string>);
@@ -125,6 +126,14 @@ export function SignupForm() {
             {errors.acceptGuidelines}
           </p>
         )}
+      </div>
+
+      <div>
+        <label className="flex items-start gap-2.5 text-sm text-body">
+          <input type="checkbox" checked={newsletterOptIn} onChange={(e) => setNewsletterOptIn(e.target.checked)} className="mt-0.5 h-4 w-4 accent-accent" />
+          <span>Send me the RegReporting Network newsletter with regulatory updates, new challenges, useful resources and major reporting developments.</span>
+        </label>
+        <p className="mt-1 pl-6 text-2xs text-muted">Optional — separate from your account. You can unsubscribe at any time.</p>
       </div>
 
       <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">

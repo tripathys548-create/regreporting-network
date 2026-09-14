@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DailyChallengeTeaser } from "./_home/DailyChallengeTeaser";
+import { NewsletterCTA } from "@/components/newsletter/NewsletterCTA";
 import { ContributorList } from "@/components/community/ContributorList";
 import { DiscussionRow } from "@/components/community/DiscussionRow";
 import { RegulatorySourceCard } from "@/components/radar/RegulatorySourceCard";
@@ -184,6 +185,8 @@ export default async function HomePage() {
           <Panel title="Upcoming Milestones" icon="calendar" action={{ href: "/timeline", label: "Timeline" }} bodyClassName="p-0">
             <MilestoneList milestones={milestones} compact />
           </Panel>
+
+          <NewsletterCTA source="homepage" />
 
           {contributors.length > 0 && (
             <Panel title="Most Helpful Contributors" icon="users" bodyClassName="p-0">

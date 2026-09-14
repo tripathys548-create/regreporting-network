@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DailyRegChallenge } from "@/components/challenges/DailyRegChallenge";
 import { ChallengeStats } from "@/components/challenges/DailyChallenge";
+import { NewsletterCTA } from "@/components/newsletter/NewsletterCTA";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, TopicBadge } from "@/components/ui/Badge";
 import { Icon, type IconName } from "@/components/ui/Icon";
@@ -91,6 +92,8 @@ export default async function ChallengesPage() {
               })}
             </ol>
           </Panel>
+
+          <NewsletterCTA source="challenges" />
         </aside>
       </div>
     </>

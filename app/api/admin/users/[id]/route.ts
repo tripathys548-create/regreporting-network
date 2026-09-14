@@ -1,6 +1,6 @@
 import { authorizeApi } from "@/lib/auth/session";
 import { asRecord, fromService, jsonError, parseMutation } from "@/lib/http";
-import { setPractitionerVerified, setUserRole, setUserSuspended } from "@/lib/services/moderation";
+import { resendWelcomeEmail, setPractitionerVerified, setUserRole, setUserSuspended } from "@/lib/services/moderation";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +30,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
       return fromService(await setPractitionerVerified(actorId, params.id, false));
     case "role":
       return fromService(await setUserRole(actorId, params.id, typeof role === "string" ? role : ""));
+    case "resend-welcome":
+      return fromService(await resendWelcomeEmail(actorId, params.id));
     default:
       return jsonError("Unknown action.", 400);
   }

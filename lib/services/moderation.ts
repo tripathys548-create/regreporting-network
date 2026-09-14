@@ -2,6 +2,7 @@ import { SOURCES } from "@/data/sources";
 import { isTopicSlug } from "@/data/topics";
 import { prisma } from "@/lib/db";
 import { sendEmail } from "@/lib/email/mailer";
+import { sendWelcomeEmailOnce } from "@/lib/email/welcome";
 import { isOnSourceDomain, normaliseUrl } from "@/lib/ingestion/run";
 import type { TopicSlug, UpdateSeverity, UserRole } from "@/types";
 import type { ServiceResult } from "./community";
@@ -222,6 +223,15 @@ export async function setPractitionerVerified(actorId: string, userId: string, v
   }
   await audit(actorId, verified ? "user.verify-practitioner" : "user.unverify-practitioner", "user", userId);
   return { ok: true, value: { verified } };
+}
+
+/** Admin-triggered resend, bypassing the one-time welcomeEmailSentAt guard used on normal signup. */
+export async function resendWelcomeEmail(actorId: string, userId: string): Promise<ServiceResult<{ delivered: boolean }>> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return fail(404, "Member not found.");
+  const { delivered } = await sendWelcomeEmailOnce(userId, { force: true });
+  await audit(actorId, "user.resend-welcome-email", "user", userId, delivered ? "delivered" : "not delivered");
+  return { ok: true, value: { delivered } };
 }
 
 const ROLES: UserRole[] = ["member", "moderator", "admin"];

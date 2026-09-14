@@ -63,9 +63,11 @@ export interface SignupInput {
   yearsExperience: number;
   location: string;
   expertise: TopicSlug[];
+  /** Separate, optional marketing consent — never implied by account creation. */
+  newsletterOptIn: boolean;
 }
 
-export type ProfileUpdateInput = Omit<SignupInput, "email" | "password"> & { bio: string };
+export type ProfileUpdateInput = Omit<SignupInput, "email" | "password" | "newsletterOptIn"> & { bio: string };
 
 export type FollowTargetType = "user" | "discussion" | "source" | "topic";
 

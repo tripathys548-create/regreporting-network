@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AskRegBotButton } from "@/components/regbot/AskRegBot";
+import { NewsletterCTA } from "@/components/newsletter/NewsletterCTA";
 import { TopicBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -128,6 +129,8 @@ export default async function KnowledgeIndexPage({ searchParams }: { searchParam
         </div>
         <p className="border-t border-line px-4 py-2 text-2xs text-muted">Always verify document titles and dates against the publisher&apos;s official website.</p>
       </Panel>
+
+      <NewsletterCTA source="knowledge-base" className="mt-8" />
     </>
   );
 }
