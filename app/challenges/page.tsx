@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChallengeStats, DailyChallenge } from "@/components/challenges/DailyChallenge";
-import type { ResolvedReference } from "@/components/challenges/QuestionCard";
+import { DailyRegChallenge } from "@/components/challenges/DailyRegChallenge";
+import { ChallengeStats } from "@/components/challenges/DailyChallenge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, TopicBadge } from "@/components/ui/Badge";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { DemoContentLabel } from "@/components/ui/SourceLabels";
-import { getDailyQuestion, getLeaderboard, listChallenges } from "@/lib/repositories/challenges";
-import { getDocuments, getSourceSync } from "@/lib/repositories/sources";
+import { getLeaderboard, listChallenges } from "@/lib/repositories/challenges";
 import { getProfileSummaries } from "@/lib/repositories/users";
 import type { ChallengeType, Difficulty } from "@/types";
 
@@ -19,9 +18,8 @@ const TYPE_ICON: Record<ChallengeType, IconName> = { "spot-the-rejection": "sear
 const DIFFICULTY_LABEL: Record<Difficulty, string> = { foundation: "Foundation", practitioner: "Practitioner", expert: "Expert" };
 
 export default async function ChallengesPage() {
-  const [challenges, daily, leaderboard] = await Promise.all([listChallenges(), getDailyQuestion(), getLeaderboard()]);
-  const [docs, profiles] = await Promise.all([getDocuments(daily.references.map((r) => r.sourceDocumentId)), getProfileSummaries(leaderboard.map((e) => e.userId))]);
-  const dailyRefs: ResolvedReference[] = docs.map((d) => ({ id: d.id, title: d.title, url: d.url, sourceShortName: getSourceSync(d.sourceId).shortName }));
+  const [challenges, leaderboard] = await Promise.all([listChallenges(), getLeaderboard()]);
+  const profiles = await getProfileSummaries(leaderboard.map((e) => e.userId));
 
   return (
     <>
@@ -34,8 +32,8 @@ export default async function ChallengesPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="min-w-0 space-y-6">
-          <Panel id="daily" title="Daily Challenge" icon="calendar" headerRight={<Badge tone="accent">One question per day</Badge>}>
-            <DailyChallenge question={daily} references={dailyRefs} />
+          <Panel id="daily" title="Daily Reg Challenge" icon="calendar" headerRight={<Badge tone="accent">5 questions · up to 500 XP</Badge>}>
+            <DailyRegChallenge />
           </Panel>
 
           <section aria-labelledby="sets-heading">

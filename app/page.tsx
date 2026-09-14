@@ -13,7 +13,6 @@ import { topicLabel } from "@/data/topics";
 import { getSession } from "@/lib/auth/session";
 import { SOURCE_TYPE_ORDER } from "@/lib/constants";
 import { isWithinDays } from "@/lib/format";
-import { getDailyQuestion } from "@/lib/repositories/challenges";
 import { countActiveDiscussions, listDiscussions, listMostDiscussedThisWeek } from "@/lib/repositories/community";
 import { listArticles } from "@/lib/repositories/knowledge";
 import { listRadarSources } from "@/lib/repositories/sources";
@@ -34,7 +33,7 @@ function HeroStat({ icon, value, label, href }: { icon: IconName; value: string;
 }
 
 export default async function HomePage() {
-  const [session, radarSources, latestBySource, updates, trending, mostDiscussed, contributors, milestones, articles, dailyQuestion, activeDiscussions] = await Promise.all([
+  const [session, radarSources, latestBySource, updates, trending, mostDiscussed, contributors, milestones, articles, activeDiscussions] = await Promise.all([
     getSession(),
     listRadarSources(),
     getLatestUpdateBySource(),
@@ -44,7 +43,6 @@ export default async function HomePage() {
     listTopContributors(5),
     listMilestones({ limit: 4 }),
     listArticles(),
-    getDailyQuestion(),
     countActiveDiscussions(7),
   ]);
 
@@ -160,7 +158,7 @@ export default async function HomePage() {
               </Panel>
             )}
             <Panel title="Daily Challenge" icon="trophy" action={{ href: "/challenges", label: "Challenges" }}>
-              <DailyChallengeTeaser prompt={dailyQuestion.prompt} hasScenario={dailyQuestion.scenario !== null} />
+              <DailyChallengeTeaser />
             </Panel>
           </div>
         </div>

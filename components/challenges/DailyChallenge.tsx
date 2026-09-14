@@ -1,10 +1,10 @@
 "use client";
 
-import { useChallengeProgress, DAILY_BONUS, POINTS_PER_CORRECT } from "@/hooks/useChallengeProgress";
-import type { ChallengeQuestion, LeaderboardEntry } from "@/types";
+import { useChallengeProgress } from "@/hooks/useChallengeProgress";
+import { useDailyChallenge } from "@/hooks/useDailyChallenge";
+import type { LeaderboardEntry } from "@/types";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/States";
-import { QuestionCard, type ResolvedReference } from "./QuestionCard";
 
 function Stat({ icon, label, value }: { icon: IconName; label: string; value: string }) {
   return (
@@ -25,7 +25,8 @@ function computeRank(score: number, leaderboard: LeaderboardEntry[]): number {
 
 export function ChallengeStats({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   const progress = useChallengeProgress();
-  if (!progress.loaded) {
+  const daily = useDailyChallenge();
+  if (!progress.loaded || !daily.loaded) {
     return (
       <div className="grid grid-cols-3 gap-2">
         {[0, 1, 2].map((i) => (
@@ -37,33 +38,8 @@ export function ChallengeStats({ leaderboard }: { leaderboard: LeaderboardEntry[
   return (
     <div className="grid grid-cols-3 gap-2">
       <Stat icon="trophy" label="Score" value={String(progress.score)} />
-      <Stat icon="flame" label="Streak" value={`${progress.streakDays}d`} />
+      <Stat icon="flame" label="Streak" value={`${daily.streakDays}d`} />
       <Stat icon="layers" label="Rank" value={`#${computeRank(progress.score, leaderboard)}`} />
-    </div>
-  );
-}
-
-export function DailyChallenge({ question, references }: { question: ChallengeQuestion; references: ResolvedReference[] }) {
-  const progress = useChallengeProgress();
-
-  if (!progress.loaded) return <Skeleton className="h-64" />;
-
-  const previous = progress.dailyDoneToday ? progress.attempts[question.id]?.selectedOptionId ?? null : null;
-
-  return (
-    <div>
-      <p className="mb-3 text-2xs text-muted">
-        {progress.dailyDoneToday
-          ? "Completed today. A new question is published at 00:00 UTC."
-          : `+${POINTS_PER_CORRECT} points for a correct answer, +${DAILY_BONUS} daily bonus, and your streak continues.`}
-      </p>
-      <QuestionCard
-        key={`${question.id}-${previous ?? "new"}`}
-        question={question}
-        references={references}
-        previousSelection={previous}
-        onAnswered={(selected, correct) => progress.record(question.id, selected, correct, true)}
-      />
     </div>
   );
 }

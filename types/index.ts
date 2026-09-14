@@ -5,5 +5,6 @@ export * from "./community";
 export * from "./knowledge";
 export * from "./regbot";
 export * from "./challenge";
+export * from "./dailyChallenge";
 export * from "./notification";
 export * from "./search";
