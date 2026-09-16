@@ -7,12 +7,14 @@ import { TopicBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Panel } from "@/components/ui/Panel";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { DemoContentLabel } from "@/components/ui/SourceLabels";
 import { formatDate } from "@/lib/format";
 import { listDiscussions } from "@/lib/repositories/community";
 import { getArticleBySlug, getArticlesBySlugs } from "@/lib/repositories/knowledge";
 import { getDocuments } from "@/lib/repositories/sources";
 import { getProfileSummaries } from "@/lib/repositories/users";
+import { siteUrl } from "@/lib/site";
 import { AskRegBotButton } from "@/components/regbot/AskRegBot";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -62,17 +64,20 @@ export default async function ArticlePage({ params }: { params: { slug: string }
           </div>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink">{article.title}</h1>
           <p className="mt-2 text-sm leading-relaxed text-body">{article.summary}</p>
-          <p className="mt-3 text-2xs text-muted">
-            Last reviewed {formatDate(article.lastReviewedAt)}
-            {reviewer && (
-              <>
-                {" "}by{" "}
-                <Link href={`/members/${reviewer.handle}`} className="font-medium text-body hover:text-accent">
-                  {reviewer.displayName}
-                </Link>
-              </>
-            )}
-          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-2xs text-muted">
+              Last reviewed {formatDate(article.lastReviewedAt)}
+              {reviewer && (
+                <>
+                  {" "}by{" "}
+                  <Link href={`/members/${reviewer.handle}`} className="font-medium text-body hover:text-accent">
+                    {reviewer.displayName}
+                  </Link>
+                </>
+              )}
+            </p>
+            <ShareButton url={siteUrl(`/knowledge/${article.slug}`)} title={article.title} text={article.summary} contentType="knowledge-article" contentId={article.id} />
+          </div>
           {/* Mobile section jump */}
           <details className="mt-4 rounded-md border border-line lg:hidden">
             <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-body">Jump to section ({article.sections.length})</summary>

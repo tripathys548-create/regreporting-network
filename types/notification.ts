@@ -6,7 +6,24 @@ export type NotificationType =
   | "followed-discussion"
   | "regulatory-alert"
   | "challenge"
-  | "followed-source";
+  | "followed-source"
+  | "followed-topic"
+  | "suggestion"
+  | "admin-announcement";
+
+export type NotificationCategory = "regulatory" | "community" | "system";
+
+export interface NotificationPreferences {
+  replies: boolean;
+  mentions: boolean;
+  followedDiscussions: boolean;
+  followedTopics: boolean;
+  regulatoryUpdates: boolean;
+  knowledgeArticles: boolean;
+  challenges: boolean;
+  adminAnnouncements: boolean;
+  emailDigest: boolean;
+}
 
 export interface Notification {
   id: ID;

@@ -323,7 +323,23 @@ async function RemovedSection() {
 async function UsersSection({ viewerId, isAdmin }: { viewerId: string; isAdmin: boolean }) {
   const users = await listUsersForAdmin();
   return (
-    <ul className="divide-y divide-line">
+    <>
+      {isAdmin && (
+        <div className="border-b border-line p-4">
+          <h3 className="mb-2 text-xs font-semibold text-ink">Broadcast announcement</h3>
+          <p className="mb-2 text-2xs text-muted">Sends an in-app notification to every active member. Rate-limited to a few per hour — use sparingly.</p>
+          <AdminAction
+            endpoint="/api/admin/announcements"
+            method="POST"
+            body={{}}
+            label="Send announcement"
+            reasonPrompt="Announcement (first line is the title, rest is the message)"
+            reasonField="message"
+            confirm="Send this announcement to every active member now?"
+          />
+        </div>
+      )}
+      <ul className="divide-y divide-line">
       {users.map((u) => {
         const self = u.id === viewerId;
         const endpoint = `/api/admin/users/${u.id}`;
@@ -377,7 +393,8 @@ async function UsersSection({ viewerId, isAdmin }: { viewerId: string; isAdmin: 
           </li>
         );
       })}
-    </ul>
+      </ul>
+    </>
   );
 }
 
@@ -413,6 +430,24 @@ async function SecuritySection() {
         <p>RegBot abuse: <span className="font-mono text-ink">{overview.regbotAbuseToday}</span></p>
         <p>Admin events: <span className="font-mono text-ink">{overview.adminEventsToday}</span></p>
         <p>Critical open: <span className="font-mono text-ink">{overview.criticalOpenCount}</span></p>
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-xs font-semibold text-ink">Member activity (aggregate only)</h3>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-md border border-line bg-canvas p-3">
+            <p className="text-2xs uppercase tracking-wide text-muted">Members online</p>
+            <p className="font-mono text-xl font-semibold text-ink">{overview.membersOnline}</p>
+          </div>
+          <div className="rounded-md border border-line bg-canvas p-3">
+            <p className="text-2xs uppercase tracking-wide text-muted">Active today</p>
+            <p className="font-mono text-xl font-semibold text-ink">{overview.activeToday}</p>
+          </div>
+          <div className="rounded-md border border-line bg-canvas p-3">
+            <p className="text-2xs uppercase tracking-wide text-muted">Active this week</p>
+            <p className="font-mono text-xl font-semibold text-ink">{overview.activeThisWeek}</p>
+          </div>
+        </div>
       </div>
 
       <div>
@@ -508,7 +543,7 @@ async function SuggestionsSection() {
             <Badge tone={s.category === "security" ? "bad" : "outline"}>{s.category}</Badge>
             <Badge tone="outline">{s.priority}</Badge>
             {s.severity && <Badge tone={SEVERITY_TONE[s.severity]}>{s.severity}</Badge>}
-            <Badge tone={s.status === "shipped" ? "good" : s.status === "declined" ? "bad" : "outline"}>{s.status}</Badge>
+            <Badge tone={s.status === "shipped" ? "good" : s.status === "declined" ? "bad" : "outline"}>{s.status === "shipped" ? "completed" : s.status}</Badge>
             <span className="text-2xs text-muted">
               {s.voteCount} votes · by {s.authorName} · <RelativeTime iso={s.createdAt} />
             </span>
@@ -516,12 +551,21 @@ async function SuggestionsSection() {
           <p className="mt-1 text-xs font-semibold text-ink">{s.title}</p>
           <p className="text-xs text-body">{s.description}</p>
           {s.relatedPage && <p className="mt-1 text-2xs text-muted">Page: {s.relatedPage}</p>}
+          {s.ownerId && <p className="mt-1 text-2xs text-muted">Owner: {s.ownerId}</p>}
           {s.adminNotes && <p className="mt-1 text-2xs text-muted">Admin notes: {s.adminNotes}</p>}
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {["planned", "in-progress", "shipped", "declined"].map((status) => (
-              <AdminAction key={status} endpoint={`/api/admin/suggestions/${s.id}`} method="PATCH" body={{ status }} label={status} variant={s.status === status ? "primary" : "ghost"} />
+            {["under-review", "planned", "in-progress", "shipped", "declined", "duplicate"].map((status) => (
+              <AdminAction
+                key={status}
+                endpoint={`/api/admin/suggestions/${s.id}`}
+                method="PATCH"
+                body={{ status }}
+                label={status === "shipped" ? "completed" : status}
+                variant={s.status === status ? "primary" : "ghost"}
+              />
             ))}
             <AdminAction endpoint={`/api/admin/suggestions/${s.id}`} method="PATCH" body={{}} label="Add note" reasonPrompt="Admin note" reasonField="adminNotes" />
+            <AdminAction endpoint={`/api/admin/suggestions/${s.id}`} method="PATCH" body={{}} label="Assign owner" reasonPrompt="Owner's user ID" reasonField="ownerId" />
           </div>
         </li>
       ))}

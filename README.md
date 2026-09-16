@@ -4,9 +4,13 @@ The community and intelligence layer for regulatory reporting professionals — 
 sources, practitioner discussion, a cited knowledge base, a research assistant (RegBot) and professional
 training challenges.
 
-**Status: Phase 3.** PostgreSQL, real regulatory update ingestion from official feeds with admin review,
-moderation tools, an audit log and SMTP email. Knowledge articles, challenge questions, milestones and RegBot
-answers are still **Example / Demo Content**. Nothing here is legal or regulatory advice.
+**Status: Phase 3 + P0 community upgrade.** PostgreSQL, real regulatory update ingestion from official feeds
+with admin review, moderation tools, an audit log and SMTP email — plus online member presence, an expanded
+notification system with per-member preferences, a reusable share button (WhatsApp/LinkedIn/X/email/native),
+and a consolidated "This Week in Regulatory Reporting" homepage section. See `docs/PRESENCE.md`,
+`docs/NOTIFICATIONS.md`, `docs/SHARING.md` and `docs/ROADMAP.md` for what's next. Knowledge articles,
+challenge questions, milestones and RegBot answers are still **Example / Demo Content**. Nothing here is
+legal or regulatory advice.
 
 ## Run it
 
@@ -107,5 +111,6 @@ tests/                 node:test suites
 1. **Phase 1** — UI, architecture, homepage, Radar, Community, RegBot UI, Challenges. ✅
 2. **Phase 2** — Authentication, profiles, discussion creation, replies, voting, search. ✅
 3. **Phase 3 (this build)** — PostgreSQL, regulatory update ingestion, admin review & moderation, audit log, SMTP email. ✅
-4. **Phase 4** — RegBot RAG: document ingestion, retrieval, LLM generation, citation verification; Knowledge Base.
-5. **Phase 5** — Reputation ledger, practitioner verification requests, advanced gamification, regulatory calendar, notification preferences.
+4. **P0 community upgrade (this build)** — Online presence, notification types/filters/preferences, sharing (ShareButton, deep links, share telemetry), admin-suggestion polish, security-pattern extension. ✅ See `docs/ROADMAP.md`.
+5. **Phase 4 / P1** — RegBot RAG: document ingestion, retrieval, LLM generation, citation verification; Knowledge Base → database; Open Graph previews.
+6. **Phase 5 / P2** — Reputation ledger, practitioner verification requests, advanced gamification, regulatory calendar, Challenges-system consolidation.

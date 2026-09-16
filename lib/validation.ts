@@ -1,7 +1,7 @@
 import { isTopicSlug } from "@/data/topics";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/auth/limits";
 import { ORGANISATION_TYPES } from "@/lib/constants";
-import type { NewCommentInput, NewDiscussionInput, OrganisationType, ProfileUpdateInput, ReportReason, SignupInput, TopicSlug } from "@/types";
+import type { NewCommentInput, NewDiscussionInput, NotificationPreferences, OrganisationType, ProfileUpdateInput, ReportReason, SignupInput, TopicSlug } from "@/types";
 
 export type FieldErrors<T> = Partial<Record<keyof T, string>>;
 
@@ -159,6 +159,34 @@ export function validateReport(input: unknown): ValidationResult<{ targetType: "
   if (!["discussion", "comment", "profile"].includes(targetType) || !targetId) return { ok: false, errors: { targetId: "Unknown content." } };
   if (!REPORT_REASONS.some((r) => r.value === reason)) return { ok: false, errors: { reason: "Choose a reason." } };
   return { ok: true, value: { targetType: targetType as "discussion" | "comment" | "profile", targetId, reason: reason as ReportReason, detail } };
+}
+
+const NOTIFICATION_PREFERENCE_KEYS: (keyof NotificationPreferences)[] = [
+  "replies",
+  "mentions",
+  "followedDiscussions",
+  "followedTopics",
+  "regulatoryUpdates",
+  "knowledgeArticles",
+  "challenges",
+  "adminAnnouncements",
+  "emailDigest",
+];
+
+/** Rejects unknown fields and non-boolean values; only known keys present in the input are returned (a PATCH-style partial update). */
+export function validateNotificationPreferences(input: unknown): ValidationResult<Partial<NotificationPreferences>> {
+  const raw = toRecord(input);
+  const unknownKeys = Object.keys(raw).filter((k) => !NOTIFICATION_PREFERENCE_KEYS.includes(k as keyof NotificationPreferences));
+  if (unknownKeys.length > 0) return { ok: false, errors: { replies: `Unknown field(s): ${unknownKeys.join(", ")}` } as FieldErrors<Partial<NotificationPreferences>> };
+
+  const value: Partial<NotificationPreferences> = {};
+  for (const key of NOTIFICATION_PREFERENCE_KEYS) {
+    if (key in raw) {
+      if (typeof raw[key] !== "boolean") return { ok: false, errors: { [key]: "Must be true or false." } as FieldErrors<Partial<NotificationPreferences>> };
+      value[key] = raw[key] as boolean;
+    }
+  }
+  return { ok: true, value };
 }
 
 export function parseTagInput(value: string): string[] {

@@ -1,4 +1,9 @@
-import type { FollowTargetType, NewCommentInput, NewDiscussionInput, RegBotResponse, RegulatoryAlert, ReportReason, SearchResponse, VoteTarget } from "@/types";
+import type { FollowTargetType, NewCommentInput, NewDiscussionInput, NotificationPreferences, RegBotResponse, RegulatoryAlert, ReportReason, SearchResponse, VoteTarget } from "@/types";
+
+// Kept as plain string literal unions (not imported from lib/repositories/shareEvents) because that
+// module imports the Prisma client, which must never end up in the browser bundle.
+type ShareContentType = "discussion" | "regulatory-update" | "knowledge-article";
+type ShareMethod = "copy-link" | "whatsapp" | "linkedin" | "email" | "x" | "native-share";
 
 /*
  * Browser-side API client. Components never call fetch directly, so the
@@ -58,4 +63,13 @@ export const api = {
   report: (input: { targetType: "discussion" | "comment" | "profile"; targetId: string; reason: ReportReason; detail: string }) =>
     post<{ alreadyReported: boolean }>("/api/reports", input),
   markNotificationsRead: (ids?: string[]) => post<{ updated: number }>("/api/notifications/read", { ids }),
+
+  getNotificationPreferences: () => request<{ preferences: NotificationPreferences }>("/api/notifications/preferences"),
+  updateNotificationPreferences: (patch: Partial<NotificationPreferences>) =>
+    request<{ preferences: NotificationPreferences }>("/api/notifications/preferences", { method: "PATCH", body: JSON.stringify(patch) }),
+
+  heartbeat: () => post<{ ok: true }>("/api/presence/heartbeat"),
+  getOnlineCount: () => request<{ onlineMembers: number }>("/api/presence/online-count"),
+
+  recordShare: (input: { contentType: ShareContentType; contentId: string; method: ShareMethod }) => post<{ ok: true }>("/api/share-events", input),
 };

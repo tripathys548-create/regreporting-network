@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { sendEmail } from "@/lib/email/mailer";
 import { sendWelcomeEmailOnce } from "@/lib/email/welcome";
 import { isOnSourceDomain, normaliseUrl } from "@/lib/ingestion/run";
+import { filterByPreference } from "@/lib/repositories/notifications";
 import type { TopicSlug, UpdateSeverity, UserRole } from "@/types";
 import type { ServiceResult } from "./community";
 
@@ -246,4 +247,33 @@ export async function setUserRole(actorId: string, userId: string, role: string)
   await prisma.user.update({ where: { id: userId }, data: { role: next } });
   await audit(actorId, "user.role", "user", userId, `${user.role} → ${next}`);
   return { ok: true, value: { role: next } };
+}
+
+/**
+ * Site-wide announcement (spec §9/§25-27's ADMIN_ANNOUNCEMENT notification type):
+ * one Notification row per active member who has not disabled adminAnnouncements.
+ * `message`'s first line is the title, the rest is the body.
+ */
+export async function broadcastAnnouncement(actorId: string, message: string): Promise<ServiceResult<{ recipientCount: number }>> {
+  const trimmed = message.trim();
+  if (trimmed.length < 8) return fail(422, "Write a short announcement (at least 8 characters).");
+  if (trimmed.length > 2000) return fail(422, "Keep the announcement under 2000 characters.");
+
+  const [firstLine, ...rest] = trimmed.split("\n");
+  const title = firstLine.slice(0, 160);
+  const body = (rest.join("\n").trim() || firstLine).slice(0, 1000);
+
+  const activeUsers = await prisma.user.findMany({ where: { status: "active" }, select: { id: true } });
+  const notifiable = await filterByPreference(
+    activeUsers.map((u) => u.id),
+    "adminAnnouncements",
+  );
+
+  if (notifiable.length) {
+    await prisma.notification.createMany({
+      data: notifiable.map((userId) => ({ userId, type: "admin-announcement", title, body, href: "/notifications" })),
+    });
+  }
+  await audit(actorId, "admin.announcement", "notification", "broadcast", `${title} (${notifiable.length} recipients)`);
+  return { ok: true, value: { recipientCount: notifiable.length } };
 }

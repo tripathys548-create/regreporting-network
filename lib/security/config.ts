@@ -38,6 +38,16 @@ export const securityConfig = {
     adminAction: { limit: envInt("RATE_LIMIT_ADMIN_ACTION", 120), windowMs: MIN },
     ingest: { limit: envInt("RATE_LIMIT_INGEST", 6), windowMs: 10 * MIN },
     defaultApi: { limit: envInt("RATE_LIMIT_DEFAULT", 120), windowMs: MIN },
+    presenceHeartbeat: { limit: envInt("RATE_LIMIT_PRESENCE_HEARTBEAT", 2), windowMs: MIN },
+    onlineCount: { limit: envInt("RATE_LIMIT_ONLINE_COUNT", 30), windowMs: MIN },
+    shareEvent: { limit: envInt("RATE_LIMIT_SHARE_EVENT", 30), windowMs: MIN },
+    notificationPreferences: { limit: envInt("RATE_LIMIT_NOTIFICATION_PREFS", 30), windowMs: MIN },
+    adminAnnouncement: { limit: envInt("RATE_LIMIT_ADMIN_ANNOUNCEMENT", 5), windowMs: HOUR },
+  },
+
+  /** Presence: how recently a member must have sent a heartbeat to count as "online". */
+  presence: {
+    onlineWindowMinutes: envInt("PRESENCE_ONLINE_WINDOW_MINUTES", 5),
   },
 
   /** RegBot daily question quotas by tier. Configurable, not hard-coded per call site. */

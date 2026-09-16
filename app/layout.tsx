@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import "./globals.css";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { PresenceHeartbeat } from "@/components/layout/PresenceHeartbeat";
 import { RegulatoryAlertBanner } from "@/components/layout/RegulatoryAlertBanner";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { VerifyEmailBanner } from "@/components/layout/VerifyEmailBanner";
@@ -54,6 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Skip to content
         </a>
         <RegBotProvider live={regbotLiveEnabled()}>
+          {viewer && <PresenceHeartbeat />}
           <RegulatoryAlertBanner initialAlert={alert} />
           <AppHeader viewer={viewer} notifications={notifications} />
           {viewer && !viewer.verified && <VerifyEmailBanner />}

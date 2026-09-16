@@ -6,6 +6,7 @@ import { emailDeliveryConfigured } from "@/lib/email/mailer";
 import type { ContentReport, RegulatoryUpdate, UserRole } from "@/types";
 import { initialsFor, toContentReport, toRegulatoryUpdate } from "./mappers";
 import { getNewsletterAdminOverview } from "./newsletter";
+import { getPresenceOverview } from "./presence";
 
 export type AdminSection = "updates" | "sources" | "reports" | "moderation" | "users" | "audit" | "knowledge" | "challenges" | "security" | "suggestions" | "newsletter";
 
@@ -283,6 +284,9 @@ export interface SecurityOverview {
   adminEventsToday: number;
   openAlertsCount: number;
   criticalOpenCount: number;
+  membersOnline: number;
+  activeToday: number;
+  activeThisWeek: number;
 }
 
 export interface SecurityAlertRow {
@@ -313,20 +317,33 @@ export interface SecurityEventRow {
 
 export async function getSecurityOverview(): Promise<SecurityOverview> {
   const since = new Date(Date.now() - DAY_MS);
-  const [eventsToday, authFailuresToday, rateLimitEventsToday, regbotAbuseToday, adminEventsToday, openAlerts] = await Promise.all([
+  const [eventsToday, authFailuresToday, rateLimitEventsToday, regbotAbuseToday, adminEventsToday, openAlerts, presence] = await Promise.all([
     prisma.securityEvent.count({ where: { createdAt: { gte: since } } }),
     prisma.securityEvent.count({ where: { createdAt: { gte: since }, category: "authentication" } }),
     prisma.securityEvent.count({ where: { createdAt: { gte: since }, eventType: "RATE_LIMIT_EXCEEDED" } }),
     prisma.securityEvent.count({ where: { createdAt: { gte: since }, category: "regbot-abuse" } }),
     prisma.securityEvent.count({ where: { createdAt: { gte: since }, category: "admin-security" } }),
     prisma.securityAlert.findMany({ where: { status: { in: ["open", "escalated"] } }, select: { severity: true } }),
+    getPresenceOverview(),
   ]);
 
   const criticalOpenCount = openAlerts.filter((a) => a.severity === "critical").length;
   const highOpenCount = openAlerts.filter((a) => a.severity === "high").length;
   const threatLevel: SecurityOverview["threatLevel"] = criticalOpenCount > 0 ? "CRITICAL" : highOpenCount > 0 ? "HIGH" : openAlerts.length > 0 ? "MEDIUM" : "LOW";
 
-  return { threatLevel, eventsToday, authFailuresToday, rateLimitEventsToday, regbotAbuseToday, adminEventsToday, openAlertsCount: openAlerts.length, criticalOpenCount };
+  return {
+    threatLevel,
+    eventsToday,
+    authFailuresToday,
+    rateLimitEventsToday,
+    regbotAbuseToday,
+    adminEventsToday,
+    openAlertsCount: openAlerts.length,
+    criticalOpenCount,
+    membersOnline: presence.membersOnline,
+    activeToday: presence.activeToday,
+    activeThisWeek: presence.activeThisWeek,
+  };
 }
 
 export async function listSecurityAlerts(limit = 50): Promise<SecurityAlertRow[]> {

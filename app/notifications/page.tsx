@@ -2,30 +2,63 @@ import clsx from "clsx";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MarkAllReadButton } from "@/components/profile/MarkAllReadButton";
+import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { RelativeTime } from "@/components/ui/RelativeTime";
 import { EmptyState } from "@/components/ui/States";
 import { requirePageSession } from "@/lib/auth/session";
-import { NOTIFICATION_META } from "@/lib/notifications";
+import { NOTIFICATION_CATEGORY, NOTIFICATION_CATEGORY_LABEL, NOTIFICATION_META } from "@/lib/notifications";
 import { listNotifications } from "@/lib/repositories/notifications";
-import type { NotificationType } from "@/types";
+import type { NotificationCategory, NotificationType } from "@/types";
 
 export const metadata: Metadata = { title: "Notifications" };
 
-export default async function NotificationsPage() {
+const CATEGORY_TABS: { value: NotificationCategory | "all"; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "regulatory", label: NOTIFICATION_CATEGORY_LABEL.regulatory },
+  { value: "community", label: NOTIFICATION_CATEGORY_LABEL.community },
+  { value: "system", label: NOTIFICATION_CATEGORY_LABEL.system },
+];
+
+export default async function NotificationsPage({ searchParams }: { searchParams: { category?: string } }) {
   const session = await requirePageSession("/notifications");
-  const notifications = await listNotifications(session.user.id, 50);
-  const unread = notifications.filter((n) => n.readAt === null).length;
+  const all = await listNotifications(session.user.id, 50);
+  const unread = all.filter((n) => n.readAt === null).length;
+
+  const activeCategory = CATEGORY_TABS.some((t) => t.value === searchParams.category) ? (searchParams.category as NotificationCategory | "all") : "all";
+  const notifications = activeCategory === "all" ? all : all.filter((n) => NOTIFICATION_CATEGORY[n.type] === activeCategory);
 
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader
         title="Notifications"
         description="Replies to your discussions, mentions, activity in discussions you follow, regulatory alerts and challenges."
-        actions={<MarkAllReadButton disabled={unread === 0} />}
+        actions={
+          <div className="flex items-center gap-2">
+            <ButtonLink href="/settings/notifications" size="sm" variant="secondary" icon="settings">
+              Preferences
+            </ButtonLink>
+            <MarkAllReadButton disabled={unread === 0} />
+          </div>
+        }
       />
+      <nav aria-label="Filter notifications" className="mb-4 flex flex-wrap gap-1.5">
+        {CATEGORY_TABS.map((tab) => (
+          <Link
+            key={tab.value}
+            href={tab.value === "all" ? "/notifications" : `/notifications?category=${tab.value}`}
+            aria-current={activeCategory === tab.value ? "page" : undefined}
+            className={clsx(
+              "rounded-full border px-3 py-1 text-xs font-medium",
+              activeCategory === tab.value ? "border-accent bg-accent-soft text-accent" : "border-line text-muted hover:border-muted/50 hover:text-ink",
+            )}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_17rem]">
         <Panel title={unread ? `${unread} unread` : "All caught up"} bodyClassName="p-0">
           {notifications.length === 0 ? (

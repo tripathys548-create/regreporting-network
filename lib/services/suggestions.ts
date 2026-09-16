@@ -20,7 +20,7 @@ export type SuggestionPriority = (typeof SUGGESTION_PRIORITIES)[number];
 export const SUGGESTION_SEVERITIES = ["low", "medium", "high", "critical"] as const;
 export type SuggestionSeverity = (typeof SUGGESTION_SEVERITIES)[number];
 
-const SUGGESTION_STATUSES = ["open", "planned", "in-progress", "shipped", "declined"] as const;
+const SUGGESTION_STATUSES = ["open", "under-review", "planned", "in-progress", "shipped", "declined", "duplicate"] as const;
 
 export interface NewSuggestionInput {
   title: string;

@@ -20,6 +20,9 @@ model User {
   suspendedAt     DateTime?
   suspendedReason String?
   lastLoginAt     DateTime?
+  /// Updated by POST /api/presence/heartbeat (~every 60s while a tab is open). Aggregate-only —
+  /// never exposed per-user; see docs/PRESENCE.md.
+  lastSeenAt      DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -38,12 +41,14 @@ model User {
   savedDiscussions           SavedDiscussion[]
   follows                    UserFollow[]
   notifications              Notification[]
+  notificationPreference     NotificationPreference?
   reports                    ContentReport[]
   auditLogs                  AuditLog[]
   suggestions                Suggestion[]
   suggestionVotes            SuggestionVote[]
   newsletterSubscriptions    NewsletterSubscription[]
   newsletterCampaignsCreated NewsletterCampaign[]
+  shareEvents                ShareEvent[]
 }
 
 model Profile {
@@ -306,6 +311,42 @@ model Notification {
   @@index([userId, createdAt])
 }
 
+/// Per-user notification delivery preferences. One row per user, created on first
+/// write (see lib/repositories/notifications.ts). In-app toggles gate the fan-out
+/// notification creators in lib/services/community.ts; emailDigest reuses the
+/// existing OutboundEmail/SMTP pipeline — no new provider. No WhatsApp field: the
+/// spec explicitly withholds that until a provider is configured.
+model NotificationPreference {
+  userId              String   @id
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies             Boolean  @default(true)
+  mentions            Boolean  @default(true)
+  followedDiscussions Boolean  @default(true)
+  followedTopics      Boolean  @default(true)
+  regulatoryUpdates   Boolean  @default(true)
+  knowledgeArticles   Boolean  @default(true)
+  challenges          Boolean  @default(true)
+  adminAnnouncements  Boolean  @default(true)
+  emailDigest         Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+}
+
+/// Telemetry for the ShareButton (§24: content type, content id, method, timestamp,
+/// authenticated user where available). Aggregate/operational only — never rendered
+/// per-viewer, and userId is nullable so anonymous shares are captured too.
+model ShareEvent {
+  id          String   @id @default(cuid())
+  contentType String // discussion | regulatory-update | knowledge-article
+  contentId   String
+  method      String // copy-link | whatsapp | linkedin | email | x | native-share
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  @@index([contentType, contentId])
+  @@index([createdAt])
+}
+
 model ContentReport {
   id           String    @id @default(cuid())
   targetType   String // discussion | comment | profile
@@ -476,7 +517,7 @@ model Suggestion {
   screenshotUrl    String?
   severity         String? // security category only: low | medium | high | critical
   stepsToReproduce String   @default("")
-  status           String   @default("open") // open | planned | in-progress | shipped | declined
+  status           String   @default("open") // open | under-review | planned | in-progress | shipped | declined | duplicate
   ownerId          String?
   adminNotes       String   @default("")
   targetRelease    String   @default("")

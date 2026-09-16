@@ -5,12 +5,14 @@ import { AskRegBotButton } from "@/components/regbot/AskRegBot";
 import { DiscussionRow } from "@/components/community/DiscussionRow";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import { OnlineCount } from "@/components/ui/OnlineCount";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { EmptyState } from "@/components/ui/States";
 import { isTopicSlug, topicLabel } from "@/data/topics";
 import { firstParam, type SearchParams } from "@/lib/params";
 import { countDiscussionsByCategory, listDiscussions, listMostDiscussedThisWeek, type DiscussionSort } from "@/lib/repositories/community";
+import { getOnlineCount } from "@/lib/repositories/presence";
 import { listTopContributors } from "@/lib/repositories/users";
 
 export const metadata: Metadata = { title: "Community" };
@@ -21,11 +23,12 @@ export default async function CommunityPage({ searchParams }: { searchParams: Se
   const rawSort = firstParam(searchParams, "sort");
   const sort: DiscussionSort = SORT_OPTIONS.find((o) => o.value === rawSort)?.value ?? "trending";
 
-  const [discussions, counts, mostDiscussed, contributors] = await Promise.all([
+  const [discussions, counts, mostDiscussed, contributors, onlineMembers] = await Promise.all([
     listDiscussions({ category: category ?? undefined, sort }),
     countDiscussionsByCategory(),
     listMostDiscussedThisWeek(4),
     listTopContributors(5),
+    getOnlineCount(),
   ]);
 
   return (
@@ -33,7 +36,12 @@ export default async function CommunityPage({ searchParams }: { searchParams: Se
       <PageHeader
         eyebrow="Practitioner discussion"
         title="Community"
-        description="Ask implementation questions, compare approaches and learn how other firms handle reporting problems. Replies are member interpretation — always check the official source."
+        description={
+          <>
+            Ask implementation questions, compare approaches and learn how other firms handle reporting problems. Replies are member interpretation — always check the official source.{" "}
+            <OnlineCount initial={onlineMembers} className="ml-1 inline-flex items-center font-medium text-body" />
+          </>
+        }
         actions={
           <>
             <AskRegBotButton size="md">Ask RegBot first</AskRegBotButton>

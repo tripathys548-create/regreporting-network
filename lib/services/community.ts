@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { SOURCES } from "@/data/sources";
 import { isTopicSlug } from "@/data/topics";
 import { prisma } from "@/lib/db";
+import { filterByPreference } from "@/lib/repositories/notifications";
 import { excerpt } from "@/lib/text";
 import type { FollowTargetType, NewCommentInput, NewDiscussionInput, ReportReason, VoteTarget } from "@/types";
 
@@ -29,8 +30,8 @@ function slugify(title: string): string {
 
 export async function createDiscussion(authorId: string, input: NewDiscussionInput): Promise<ServiceResult<{ slug: string }>> {
   const slug = slugify(input.title);
-  await prisma.$transaction(async (tx) => {
-    const discussion = await tx.discussion.create({
+  const discussion = await prisma.$transaction(async (tx) => {
+    const created = await tx.discussion.create({
       data: {
         slug,
         title: input.title,
@@ -42,8 +43,28 @@ export async function createDiscussion(authorId: string, input: NewDiscussionInp
       },
     });
     // Authors follow their own discussions so they hear about replies from other followers' activity too.
-    await tx.userFollow.create({ data: { followerId: authorId, targetType: "discussion", targetId: discussion.id } });
+    await tx.userFollow.create({ data: { followerId: authorId, targetType: "discussion", targetId: created.id } });
+    return created;
   });
+
+  // Notify members who follow this topic, respecting their notification preference.
+  const topicFollowers = await prisma.userFollow.findMany({ where: { targetType: "topic", targetId: input.category }, select: { followerId: true } });
+  const notifiable = await filterByPreference(
+    topicFollowers.map((f) => f.followerId).filter((id) => id !== authorId),
+    "followedTopics",
+  );
+  if (notifiable.length) {
+    await prisma.notification.createMany({
+      data: notifiable.map((userId) => ({
+        userId,
+        type: "followed-topic",
+        title: "New discussion in a topic you follow",
+        body: discussion.title,
+        href: `/community/${slug}`,
+      })),
+    });
+  }
+
   return { ok: true, value: { slug } };
 }
 
@@ -76,11 +97,12 @@ export async function createComment(discussionId: string, authorId: string, inpu
   });
 
   // Notifications: discussion author, other followers, and @mentions. Never notify the replier.
+  // Each group is filtered against the recipient's own notification preference before being queued.
   const href = `/community/${discussion.slug}#${comment.id}`;
   const notified = new Set<string>([authorId]);
   const rows: { userId: string; type: string; title: string; body: string; href: string }[] = [];
 
-  if (!notified.has(discussion.authorId)) {
+  if (!notified.has(discussion.authorId) && (await filterByPreference([discussion.authorId], "replies")).length) {
     rows.push({ userId: discussion.authorId, type: "reply", title: `${authorName} replied`, body: discussion.title, href });
     notified.add(discussion.authorId);
   }
@@ -88,18 +110,24 @@ export async function createComment(discussionId: string, authorId: string, inpu
   const handles = Array.from(new Set(Array.from(input.body.matchAll(MENTION_PATTERN), (m) => m[1])));
   if (handles.length) {
     const mentioned = await prisma.profile.findMany({ where: { handle: { in: handles } } });
-    for (const p of mentioned) {
-      if (notified.has(p.userId)) continue;
-      rows.push({ userId: p.userId, type: "mention", title: `${authorName} mentioned you`, body: excerpt(input.body, 120), href });
-      notified.add(p.userId);
+    const mentionable = await filterByPreference(
+      mentioned.map((p) => p.userId).filter((id) => !notified.has(id)),
+      "mentions",
+    );
+    for (const userId of mentionable) {
+      rows.push({ userId, type: "mention", title: `${authorName} mentioned you`, body: excerpt(input.body, 120), href });
+      notified.add(userId);
     }
   }
 
   const followers = await prisma.userFollow.findMany({ where: { targetType: "discussion", targetId: discussionId } });
-  for (const f of followers) {
-    if (notified.has(f.followerId)) continue;
-    rows.push({ userId: f.followerId, type: "followed-discussion", title: "New reply in a discussion you follow", body: discussion.title, href });
-    notified.add(f.followerId);
+  const followersNotifiable = await filterByPreference(
+    followers.map((f) => f.followerId).filter((id) => !notified.has(id)),
+    "followedDiscussions",
+  );
+  for (const userId of followersNotifiable) {
+    rows.push({ userId, type: "followed-discussion", title: "New reply in a discussion you follow", body: discussion.title, href });
+    notified.add(userId);
   }
 
   if (rows.length) await prisma.notification.createMany({ data: rows });

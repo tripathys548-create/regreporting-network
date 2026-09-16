@@ -3,11 +3,13 @@ import { DailyChallengeTeaser } from "./_home/DailyChallengeTeaser";
 import { NewsletterCTA } from "@/components/newsletter/NewsletterCTA";
 import { ContributorList } from "@/components/community/ContributorList";
 import { DiscussionRow } from "@/components/community/DiscussionRow";
+import { WeeklySummaryPanel } from "@/components/community/WeeklySummaryPanel";
 import { RegulatorySourceCard } from "@/components/radar/RegulatorySourceCard";
 import { RegBotQuickAsk } from "@/components/regbot/AskRegBot";
 import { MilestoneList } from "@/components/timeline/MilestoneList";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { OnlineCount } from "@/components/ui/OnlineCount";
 import { Panel } from "@/components/ui/Panel";
 import { SourceTypeLabel } from "@/components/ui/SourceLabels";
 import { topicLabel } from "@/data/topics";
@@ -16,10 +18,12 @@ import { SOURCE_TYPE_ORDER } from "@/lib/constants";
 import { isWithinDays } from "@/lib/format";
 import { countActiveDiscussions, listDiscussions, listMostDiscussedThisWeek } from "@/lib/repositories/community";
 import { listArticles } from "@/lib/repositories/knowledge";
+import { getOnlineCount } from "@/lib/repositories/presence";
 import { listRadarSources } from "@/lib/repositories/sources";
 import { listMilestones } from "@/lib/repositories/timeline";
 import { getLatestUpdateBySource, listUpdates } from "@/lib/repositories/updates";
 import { listTopContributors } from "@/lib/repositories/users";
+import { getWeeklySummary } from "@/lib/repositories/weekly";
 
 function HeroStat({ icon, value, label, href }: { icon: IconName; value: string; label: string; href: string }) {
   return (
@@ -34,7 +38,7 @@ function HeroStat({ icon, value, label, href }: { icon: IconName; value: string;
 }
 
 export default async function HomePage() {
-  const [session, radarSources, latestBySource, updates, trending, mostDiscussed, contributors, milestones, articles, activeDiscussions] = await Promise.all([
+  const [session, radarSources, latestBySource, updates, trending, mostDiscussed, contributors, milestones, articles, activeDiscussions, weeklySummary, onlineMembers] = await Promise.all([
     getSession(),
     listRadarSources(),
     getLatestUpdateBySource(),
@@ -45,6 +49,8 @@ export default async function HomePage() {
     listMilestones({ limit: 4 }),
     listArticles(),
     countActiveDiscussions(7),
+    getWeeklySummary(),
+    getOnlineCount(),
   ]);
 
   const updatesThisWeek = updates.filter((u) => isWithinDays(u.publishedAt, 7)).length;
@@ -57,7 +63,10 @@ export default async function HomePage() {
       <section aria-labelledby="hero-heading" className="overflow-hidden rounded-md border border-navy-3 bg-navy text-white">
         <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.35fr_1fr] lg:gap-12">
           <div>
-            <p className="font-mono text-2xs font-semibold uppercase tracking-[0.2em] text-sky-300">Regulatory Reporting Community</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-mono text-2xs font-semibold uppercase tracking-[0.2em] text-sky-300">Regulatory Reporting Community</p>
+              <OnlineCount initial={onlineMembers} className="text-2xs font-medium text-slate-300" />
+            </div>
             <h1 id="hero-heading" className="mt-3 max-w-2xl text-2xl font-semibold leading-tight tracking-tight sm:text-[2rem] sm:leading-[1.2]">
               Stay ahead of regulatory change. Learn from practitioners. Solve reporting problems together.
             </h1>
@@ -134,6 +143,8 @@ export default async function HomePage() {
               </ButtonLink>
             </section>
           )}
+
+          <WeeklySummaryPanel summary={weeklySummary} />
 
           <Panel title="Knowledge Base" icon="book" action={{ href: "/knowledge", label: "Browse all" }} bodyClassName="p-3">
             <ul className="grid gap-1.5 sm:grid-cols-2">

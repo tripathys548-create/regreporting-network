@@ -10,6 +10,7 @@ import { Badge, TopicBadge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Panel } from "@/components/ui/Panel";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { DemoContentLabel, SourceBadge, SourceTypeLabel, TierIndicator } from "@/components/ui/SourceLabels";
 import { EmptyState } from "@/components/ui/States";
 import { formatDate } from "@/lib/format";
@@ -17,6 +18,7 @@ import { listDiscussionsByTopics } from "@/lib/repositories/community";
 import { listArticles } from "@/lib/repositories/knowledge";
 import { getSource } from "@/lib/repositories/sources";
 import { getUpdate } from "@/lib/repositories/updates";
+import { siteUrl } from "@/lib/site";
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const update = await getUpdate(params.id);
@@ -85,6 +87,14 @@ export default async function UpdateDetailPage({ params }: { params: { id: strin
                 Read {source.shortName} Update
               </ButtonLink>
               <span className="text-2xs text-muted">Opens {host} in a new tab</span>
+              <ShareButton
+                url={siteUrl(`/radar/${update.id}`)}
+                title={update.title}
+                text={update.summary}
+                contentType="regulatory-update"
+                contentId={update.id}
+                className="ml-auto"
+              />
             </div>
           </div>
         </div>

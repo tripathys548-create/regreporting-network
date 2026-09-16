@@ -13,14 +13,17 @@ import { Badge, Tag, TopicBadge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { Panel } from "@/components/ui/Panel";
 import { RelativeTime } from "@/components/ui/RelativeTime";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { SourceTypeLabel } from "@/components/ui/SourceLabels";
 import { EmptyState } from "@/components/ui/States";
 import { topicLabel } from "@/data/topics";
 import { getSession, getViewerStatus } from "@/lib/auth/session";
+import { excerpt } from "@/lib/text";
 import { formatCompact } from "@/lib/format";
 import { getDiscussionBySlug, getViewerState, listComments, listDiscussions, recordDiscussionView } from "@/lib/repositories/community";
 import { listArticles } from "@/lib/repositories/knowledge";
 import { isFollowing } from "@/lib/repositories/users";
+import { siteUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -111,7 +114,16 @@ export default async function DiscussionPage({ params }: { params: { slug: strin
             )}
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
               <DiscussionActions discussionId={discussion.id} initialVoteScore={discussion.voteScore} initialState={viewerState} viewerStatus={viewerStatus} isAuthor={isAuthor} />
-              {!isAuthor && <ReportButton targetType="discussion" targetId={discussion.id} viewerStatus={viewerStatus} />}
+              <div className="flex items-center gap-2">
+                <ShareButton
+                  url={siteUrl(`/community/${discussion.slug}`)}
+                  title={discussion.title}
+                  text={excerpt(discussion.body, 140)}
+                  contentType="discussion"
+                  contentId={discussion.id}
+                />
+                {!isAuthor && <ReportButton targetType="discussion" targetId={discussion.id} viewerStatus={viewerStatus} />}
+              </div>
             </div>
           </div>
         </article>
