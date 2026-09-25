@@ -49,4 +49,21 @@ describe("newsletter cards", () => {
     assert.match(text, /What changed: New Q&A/);
     assert.match(text, /Source: https:\/\/www\.esma\.europa\.eu/);
   });
+
+  it("orders cards critical → high → standard, keeping author order within a severity", () => {
+    const mk = (title: string, severity: NewsletterCard["severity"]) => ({ ...card, title, severity });
+    const out = parseNewsletterCards([mk("a", "standard"), mk("b", "high"), mk("c", "standard"), mk("d", "critical")]);
+    assert.deepEqual(out.map((c) => c.title), ["d", "b", "a", "c"]);
+  });
+
+  it("renders highlight fields as linked 'Get more from RegWorld' prompts on card campaigns", () => {
+    const campaign = { title: "W", subject: "S", previewText: "", introText: "", radarHighlight: "", knowledgeHighlight: "Ask RegBot who generates the UTI.", challengeHighlight: "", communityHighlight: "Share how your team handles pairing breaks.", milestoneHighlight: "", ctaLabel: "Go", ctaUrl: "/", cards: [card], audience: "members", status: "draft", scheduledAt: null, sentAt: null, sentCount: 0, createdAt: "", id: "c1" } as NewsletterCampaign;
+    const { html, text } = renderNewsletterCampaignEmail(campaign, { campaignId: "c1", subscriptionId: "s1" });
+    assert.match(html, /Get more from RegWorld/);
+    assert.match(html, /\/regbot"/);
+    assert.match(html, /\/community"/);
+    assert.doesNotMatch(html, /Daily Challenge/);
+    assert.doesNotMatch(html, /2\. Reporting Insight/);
+    assert.match(text, /Ask RegBot: https?:\/\/[^ ]+\/regbot/);
+  });
 });

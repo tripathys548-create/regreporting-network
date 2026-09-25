@@ -37,6 +37,7 @@ export function isOfficialSourceUrl(link: string): boolean {
 }
 
 const SEVERITIES = new Set(["critical", "high", "standard"]);
+const SEVERITY_RANK: Record<NewsletterCard["severity"], number> = { critical: 0, high: 1, standard: 2 };
 
 function str(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -63,6 +64,8 @@ export function parseNewsletterCards(raw: unknown): NewsletterCard[] {
       return card.title && card.whatChanged && isOfficialSourceUrl(card.sourceUrl) ? card : null;
     })
     .filter((c): c is NewsletterCard => c !== null)
+    // Most urgent first; Array.prototype.sort is stable, so the author's order holds within a severity.
+    .sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
     .slice(0, MAX_NEWSLETTER_CARDS);
 }
 

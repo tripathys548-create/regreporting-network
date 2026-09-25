@@ -72,6 +72,35 @@ function sections(campaign: NewsletterCampaign): Section[] {
   ].filter((s) => s.body.trim() !== "");
 }
 
+// For the weekly digest (campaigns with cards) the highlight fields become "Get more from RegWorld"
+// prompts, each pointing at the part of the site it promotes.
+function engagement(campaign: NewsletterCampaign): (Section & { url: string; cta: string })[] {
+  return [
+    { label: "Regulatory Radar", body: campaign.radarHighlight, url: siteUrl("/radar"), cta: "Track every update" },
+    { label: "Ask RegBot", body: campaign.knowledgeHighlight, url: siteUrl("/regbot"), cta: "Ask RegBot" },
+    { label: "Daily Challenge", body: campaign.challengeHighlight, url: siteUrl("/challenges"), cta: "Take today's challenge" },
+    { label: "Community", body: campaign.communityHighlight, url: siteUrl("/community"), cta: "Join the discussion" },
+    { label: "Knowledge Base", body: campaign.milestoneHighlight, url: siteUrl("/knowledge"), cta: "Open the Knowledge Base" },
+  ].filter((s) => s.body.trim() !== "");
+}
+
+function engagementHtml(items: ReturnType<typeof engagement>): string {
+  if (!items.length) return "";
+  const rows = items
+    .map(
+      (s) => `
+<tr><td style="padding:12px 0;border-top:1px solid ${LINE};">
+<p style="margin:0 0 3px;font-size:13px;font-weight:700;color:${INK};">${escapeHtml(s.label)}</p>
+<p style="margin:0 0 6px;font-size:13px;color:${BODY};line-height:1.55;">${escapeHtml(s.body)}</p>
+<a href="${s.url}" style="font-size:12px;font-weight:600;color:${ACCENT};text-decoration:none;" target="_blank" rel="noopener noreferrer">${escapeHtml(s.cta)} &rarr;</a>
+</td></tr>`,
+    )
+    .join("");
+  return `
+<p style="margin:24px 0 2px;font-size:12px;font-weight:700;letter-spacing:0.06em;color:${MUTED};text-transform:uppercase;">Get more from RegWorld</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>`;
+}
+
 export function renderNewsletterCampaignEmail(
   campaign: NewsletterCampaign,
   opts: { campaignId: string; subscriptionId: string },
@@ -79,8 +108,9 @@ export function renderNewsletterCampaignEmail(
   const ctaUrl = trackClickUrl(opts.campaignId, opts.subscriptionId);
   const unsubscribeUrl = siteUrl(`/api/newsletter/unsubscribe?s=${opts.subscriptionId}&t=${unsubscribeTokenFor(opts.subscriptionId)}`);
   const pixelUrl = siteUrl(`/api/newsletter/track/open?c=${opts.campaignId}&s=${opts.subscriptionId}`);
-  const sectionList = sections(campaign);
   const cards = campaign.cards ?? [];
+  const engagementList = cards.length ? engagement(campaign) : [];
+  const sectionList = cards.length ? [] : sections(campaign);
 
   const text = [
     "REGREPORTING WEEKLY",
@@ -89,6 +119,7 @@ export function renderNewsletterCampaignEmail(
     campaign.introText,
     "",
     ...(cards.length ? ["THIS WEEK IN REGULATORY REPORTING", "", ...cards.map(cardText)] : []),
+    ...(engagementList.length ? ["GET MORE FROM REGWORLD", "", ...engagementList.flatMap((s) => [s.label, s.body, `${s.cta}: ${s.url}`, ""])] : []),
     ...sectionList.flatMap((s) => [s.label, s.body, ""]),
     buttonText({ label: campaign.ctaLabel, url: ctaUrl }),
     "",
@@ -114,6 +145,7 @@ export function renderNewsletterCampaignEmail(
 <h1 style="margin:0 0 16px;font-size:20px;font-weight:700;color:${INK};">${escapeHtml(campaign.title)}</h1>
 ${campaign.introText ? `<p style="margin:0 0 20px;font-size:14px;color:${BODY};line-height:1.6;">${escapeHtml(campaign.introText)}</p>` : ""}
 ${cards.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${CANVAS};border-radius:8px;"><tr><td style="padding:14px 12px 0;">${cards.map(cardHtml).join("")}</td></tr></table>` : ""}
+${engagementHtml(engagementList)}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${sectionRows}</table>
 <div style="margin-top:24px;">${button({ label: campaign.ctaLabel, url: ctaUrl })}</div>
 <img src="${pixelUrl}" width="1" height="1" alt="" style="display:block;border:0;" />`;

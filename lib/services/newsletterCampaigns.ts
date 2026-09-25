@@ -156,6 +156,8 @@ export interface AgentCampaignInput {
   introText: string;
   cards: NewsletterCard[];
   audience: NewsletterAudience;
+  /** "Get more from RegWorld" prompts, stored in the highlight fields (see the email template). */
+  engagement: { radar: string; regbot: string; challenge: string; community: string; knowledge: string };
 }
 
 /** Draft created by the Argus agent (no human actor). Cards are validated by the caller. */
@@ -165,6 +167,11 @@ export async function createAgentCampaign(input: AgentCampaignInput): Promise<Se
     subject: input.subject,
     previewText: input.previewText,
     introText: input.introText,
+    radarHighlight: input.engagement.radar,
+    knowledgeHighlight: input.engagement.regbot,
+    challengeHighlight: input.engagement.challenge,
+    communityHighlight: input.engagement.community,
+    milestoneHighlight: input.engagement.knowledge,
     ctaLabel: "Open the Regulatory Radar",
     ctaUrl: "/radar",
   });

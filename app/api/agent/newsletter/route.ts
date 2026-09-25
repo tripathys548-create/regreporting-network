@@ -13,6 +13,7 @@ const RESEND_GUARD_MS = 5 * 86_400_000;
 /**
  * POST /api/agent/newsletter — Argus's weekly digest.
  * Body: { title, subject, previewText?, introText?, cards: NewsletterCard[], audience?: "members"|"subscribers",
+ *         engagement?: { radar?, regbot?, challenge?, community?, knowledge? } (short "Get more from RegWorld" prompts),
  *         mode: "draft" | "test" | "send", testEmail?, force? }
  * "test" creates the draft and sends a [TEST] copy to testEmail only. "send" creates and sends to the
  * audience, but refuses if an agent campaign already went out in the last 5 days (unless force: true),
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
     if (recent) return jsonError(`A newsletter was already sent on ${recent.sentAt?.toISOString()} ("${recent.title}").`, 409, { campaignId: recent.id });
   }
 
+  const engagementRaw = asRecord(body.engagement);
   const created = await createAgentCampaign({
     title: String(body.title ?? ""),
     subject: String(body.subject ?? ""),
@@ -48,6 +50,13 @@ export async function POST(request: Request) {
     introText: String(body.introText ?? ""),
     cards: cards.cards,
     audience,
+    engagement: {
+      radar: String(engagementRaw.radar ?? ""),
+      regbot: String(engagementRaw.regbot ?? ""),
+      challenge: String(engagementRaw.challenge ?? ""),
+      community: String(engagementRaw.community ?? ""),
+      knowledge: String(engagementRaw.knowledge ?? ""),
+    },
   });
   if (!created.ok) return jsonError(created.error, created.status);
   const id = created.value.id;
