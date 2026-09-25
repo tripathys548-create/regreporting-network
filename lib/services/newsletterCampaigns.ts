@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { sendEmail } from "@/lib/email/mailer";
 import { renderNewsletterCampaignEmail } from "@/lib/email/templates/newsletterCampaign";
-import type { NewsletterCampaignInput } from "@/types";
+import { toCampaign } from "@/lib/repositories/newsletter";
+import type { NewsletterAudience, NewsletterCampaignInput, NewsletterCard } from "@/types";
 import type { ServiceResult } from "./community";
 
 const fail = (status: number, error: string) => ({ ok: false as const, status, error });
@@ -79,14 +80,11 @@ export async function cancelSchedule(actorId: string, id: string): Promise<Servi
 }
 
 /** Sends to the admin's own address only, using a placeholder subscription id (no real tracking or unsubscribe target). */
-export async function sendTestEmail(actorId: string, id: string, toEmail: string): Promise<ServiceResult<{ delivered: boolean }>> {
+export async function sendTestEmail(actorId: string | null, id: string, toEmail: string): Promise<ServiceResult<{ delivered: boolean }>> {
   const campaign = await prisma.newsletterCampaign.findUnique({ where: { id } });
   if (!campaign) return fail(404, "Campaign not found.");
 
-  const { subject, text, html } = renderNewsletterCampaignEmail(
-    { ...campaign, status: campaign.status as "draft" | "scheduled" | "sent", scheduledAt: null, sentAt: null, createdAt: campaign.createdAt.toISOString() },
-    { campaignId: campaign.id, subscriptionId: "test-send" },
-  );
+  const { subject, text, html } = renderNewsletterCampaignEmail(toCampaign(campaign), { campaignId: campaign.id, subscriptionId: "test-send" });
   const result = await sendEmail({ to: toEmail, subject: `[TEST] ${subject}`, text, html, category: "newsletter-campaign", campaignId: campaign.id });
   await audit(actorId, "newsletter.send-test", id, toEmail);
   return { ok: true, value: { delivered: result.delivered } };
@@ -94,15 +92,42 @@ export async function sendTestEmail(actorId: string, id: string, toEmail: string
 
 const SEND_BATCH_SIZE = 25;
 
-/** Sends the campaign to every active subscriber now. Failures for individual recipients don't stop the run.
+/**
+ * Who a campaign goes to. "members" adds every verified, active member to the active subscribers;
+ * a member with no subscription row gets one (consentSource "member-broadcast") so the email still
+ * carries a working one-click unsubscribe and open/click tracking. Anyone who unsubscribed is skipped.
+ */
+async function recipientsFor(audience: string): Promise<{ id: string; email: string }[]> {
+  const active = await prisma.newsletterSubscription.findMany({ where: { status: "active" }, select: { id: true, email: true } });
+  if (audience !== "members") return active;
+
+  const byEmail = new Map(active.map((r) => [r.email.toLowerCase(), r]));
+  const members = await prisma.user.findMany({ where: { status: "active", emailVerifiedAt: { not: null } }, select: { id: true, email: true } });
+  for (const member of members) {
+    const email = member.email.toLowerCase();
+    if (byEmail.has(email)) continue;
+    const existing = await prisma.newsletterSubscription.findUnique({ where: { email }, select: { id: true, email: true, status: true } });
+    if (existing?.status === "unsubscribed") continue;
+    const row =
+      existing ??
+      (await prisma.newsletterSubscription.create({
+        data: { email, userId: member.id, status: "active", consentSource: "member-broadcast" },
+        select: { id: true, email: true },
+      }));
+    byEmail.set(email, { id: row.id, email: row.email });
+  }
+  return Array.from(byEmail.values());
+}
+
+/** Sends the campaign to its audience now (see recipientsFor). Failures for individual recipients don't stop the run.
  *  `actorId` is null for the automatic cron dispatch (recorded in the audit log as "System"). */
 export async function sendCampaignNow(actorId: string | null, id: string): Promise<ServiceResult<{ sentCount: number }>> {
   const campaign = await prisma.newsletterCampaign.findUnique({ where: { id } });
   if (!campaign) return fail(404, "Campaign not found.");
   if (campaign.status === "sent") return fail(409, "This newsletter has already been sent.");
 
-  const subscribers = await prisma.newsletterSubscription.findMany({ where: { status: "active" }, select: { id: true, email: true } });
-  const campaignForTemplate = { ...campaign, status: campaign.status as "draft" | "scheduled" | "sent", scheduledAt: null, sentAt: null, createdAt: campaign.createdAt.toISOString() };
+  const subscribers = await recipientsFor(campaign.audience);
+  const campaignForTemplate = toCampaign(campaign);
 
   let sentCount = 0;
   for (let i = 0; i < subscribers.length; i += SEND_BATCH_SIZE) {
@@ -122,4 +147,31 @@ export async function sendCampaignNow(actorId: string | null, id: string): Promi
   await prisma.newsletterCampaign.update({ where: { id }, data: { status: "sent", sentAt: new Date(), sentCount } });
   await audit(actorId, "newsletter.send-now", id, `${sentCount}/${subscribers.length} delivered`);
   return { ok: true, value: { sentCount } };
+}
+
+export interface AgentCampaignInput {
+  title: string;
+  subject: string;
+  previewText: string;
+  introText: string;
+  cards: NewsletterCard[];
+  audience: NewsletterAudience;
+}
+
+/** Draft created by the Argus agent (no human actor). Cards are validated by the caller. */
+export async function createAgentCampaign(input: AgentCampaignInput): Promise<ServiceResult<{ id: string }>> {
+  const data = sanitiseInput({
+    title: input.title,
+    subject: input.subject,
+    previewText: input.previewText,
+    introText: input.introText,
+    ctaLabel: "Open the Regulatory Radar",
+    ctaUrl: "/radar",
+  });
+  if (!data.title.trim() || !data.subject.trim()) return fail(422, "Title and subject are required.");
+  const campaign = await prisma.newsletterCampaign.create({
+    data: { ...data, cards: input.cards as unknown as object[], audience: input.audience },
+  });
+  await audit(null, "newsletter.agent-create", campaign.id, `${data.title} (${input.cards.length} cards, ${input.audience})`);
+  return { ok: true, value: { id: campaign.id } };
 }

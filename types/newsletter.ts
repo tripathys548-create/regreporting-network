@@ -15,6 +15,21 @@ export interface NewsletterSubscription {
 
 export type NewsletterCampaignStatus = "draft" | "scheduled" | "sent";
 
+export type NewsletterAudience = "subscribers" | "members";
+
+/** One flashcard in the weekly regulatory digest. */
+export interface NewsletterCard {
+  regulator: string; // e.g. "ESMA", "CFTC"
+  jurisdiction: string; // e.g. "EU", "US", "Global"
+  date: string; // YYYY-MM-DD the source was published
+  title: string;
+  whatChanged: string;
+  whyItMatters: string;
+  action: string; // what a reporting team should do; may be ""
+  severity: "critical" | "high" | "standard";
+  sourceUrl: string;
+}
+
 export interface NewsletterCampaign {
   id: ID;
   title: string;
@@ -28,6 +43,8 @@ export interface NewsletterCampaign {
   milestoneHighlight: string;
   ctaLabel: string;
   ctaUrl: string;
+  cards: NewsletterCard[];
+  audience: NewsletterAudience;
   status: NewsletterCampaignStatus;
   scheduledAt: ISODateString | null;
   sentAt: ISODateString | null;

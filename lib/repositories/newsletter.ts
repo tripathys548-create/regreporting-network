@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/db";
 import { emailDeliveryConfigured } from "@/lib/email/mailer";
+import { parseNewsletterCards } from "@/lib/newsletter/cards";
 import type { NewsletterAdminOverview, NewsletterCampaign, NewsletterCampaignStats, NewsletterSettings } from "@/types";
 
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
 
-function toCampaign(row: {
+export function toCampaign(row: {
   id: string;
   title: string;
   subject: string;
@@ -18,6 +19,8 @@ function toCampaign(row: {
   milestoneHighlight: string;
   ctaLabel: string;
   ctaUrl: string;
+  cards: unknown;
+  audience: string;
   status: string;
   scheduledAt: Date | null;
   sentAt: Date | null;
@@ -37,6 +40,8 @@ function toCampaign(row: {
     milestoneHighlight: row.milestoneHighlight,
     ctaLabel: row.ctaLabel,
     ctaUrl: row.ctaUrl,
+    cards: parseNewsletterCards(row.cards),
+    audience: row.audience === "members" ? "members" : "subscribers",
     status: row.status as NewsletterCampaign["status"],
     scheduledAt: row.scheduledAt?.toISOString() ?? null,
     sentAt: row.sentAt?.toISOString() ?? null,

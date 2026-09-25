@@ -161,6 +161,13 @@ model NewsletterCampaign {
   ctaLabel           String @default("Visit RegWorld")
   ctaUrl             String @default("/")
 
+  /// Weekly-digest flashcards (NewsletterCard[] in types/newsletter.ts), rendered above the
+  /// highlight sections. Written by the Argus agent via /api/agent/newsletter; [] for manual campaigns.
+  cards    Json   @default("[]")
+  /// subscribers = active newsletter subscriptions only; members = also every verified, active member
+  /// who hasn't unsubscribed (see lib/services/newsletterCampaigns.ts recipientsFor).
+  audience String @default("subscribers")
+
   status      String    @default("draft") // draft | scheduled | sent
   scheduledAt DateTime?
   sentAt      DateTime?
