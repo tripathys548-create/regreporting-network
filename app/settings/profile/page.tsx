@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DeleteAccountForm } from "@/components/auth/DeleteAccountForm";
 import { ProfileForm } from "@/components/auth/ProfileForm";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
@@ -59,6 +60,9 @@ export default async function ProfileSettingsPage() {
                 ? "Your practitioner status has been verified by moderators."
                 : "Moderators verify practitioner status separately from email verification."}
             </p>
+          </Panel>
+          <Panel title="Delete account" icon="alert">
+            <DeleteAccountForm />
           </Panel>
         </aside>
       </div>

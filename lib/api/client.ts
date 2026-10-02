@@ -53,6 +53,7 @@ export const api = {
   verifyEmail: (code: string) => post<{ ok: true }>("/api/auth/verify", { code }),
   resendVerification: () => post<{ ok: true }>("/api/auth/resend"),
   updateProfile: (input: Record<string, unknown>) => request<{ ok: true }>("/api/profile", { method: "PATCH", body: JSON.stringify(input) }),
+  deleteAccount: (input: { password: string; confirm: string }) => request<{ ok: true }>("/api/account", { method: "DELETE", body: JSON.stringify(input) }),
 
   createDiscussion: (input: NewDiscussionInput) => post<{ slug: string }>("/api/discussions", input),
   createComment: (discussionId: string, input: NewCommentInput) => post<{ id: string }>(`/api/discussions/${discussionId}/comments`, input),

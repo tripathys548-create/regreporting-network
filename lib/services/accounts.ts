@@ -70,3 +70,33 @@ export async function updateProfile(userId: string, input: ProfileUpdateInput): 
     },
   });
 }
+
+/**
+ * Deletes a member's account at their request (Google Play account-deletion policy; see
+ * /account-deletion). The User row is kept but scrubbed so discussions and replies stay readable
+ * under "Former member"; everything personal is removed: profile, sessions, votes, saves, follows,
+ * notifications, newsletter subscriptions and logged emails. Freed email and handle can sign up again.
+ */
+export async function deleteAccount(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+  if (!user) return;
+  await prisma.$transaction([
+    prisma.newsletterSubscription.deleteMany({ where: { OR: [{ userId }, { email: user.email }] } }),
+    prisma.outboundEmail.deleteMany({ where: { to: user.email } }),
+    prisma.userFollow.deleteMany({ where: { OR: [{ followerId: userId }, { targetType: "user", targetId: userId }] } }),
+    prisma.session.deleteMany({ where: { userId } }),
+    prisma.emailVerification.deleteMany({ where: { userId } }),
+    prisma.discussionVote.deleteMany({ where: { userId } }),
+    prisma.commentVote.deleteMany({ where: { userId } }),
+    prisma.suggestionVote.deleteMany({ where: { userId } }),
+    prisma.savedDiscussion.deleteMany({ where: { userId } }),
+    prisma.notification.deleteMany({ where: { userId } }),
+    prisma.notificationPreference.deleteMany({ where: { userId } }),
+    prisma.profile.deleteMany({ where: { userId } }),
+    prisma.user.update({
+      where: { id: userId },
+      data: { email: `deleted-${userId}@deleted.invalid`, passwordHash: null, status: "deleted", role: "member", emailVerifiedAt: null, lastSeenAt: null, lastLoginAt: null },
+    }),
+    prisma.auditLog.create({ data: { actorId: userId, action: "account.deleted", targetType: "user", targetId: userId, detail: "Member deleted their own account." } }),
+  ]);
+}

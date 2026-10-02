@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Icon, type IconName } from "./Icon";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "inverse";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "inverse" | "danger" | "dangerOutline";
 export type ButtonSize = "sm" | "md";
 
 const VARIANTS: Record<ButtonVariant, string> = {
@@ -11,6 +11,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   secondary: "bg-surface text-ink border border-line hover:border-muted/50 hover:bg-canvas",
   ghost: "text-body hover:bg-ink/5 border border-transparent",
   inverse: "bg-white/10 text-white border border-white/20 hover:bg-white/15",
+  danger: "bg-bad text-white border border-bad hover:bg-bad/90",
+  dangerOutline: "bg-surface text-bad border border-bad/40 hover:border-bad hover:bg-bad-soft",
 };
 
 const SIZES: Record<ButtonSize, string> = {

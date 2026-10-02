@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 
@@ -39,7 +40,11 @@ export default function PrivacyPage() {
         <Panel title="Questions">
           <p className="text-sm leading-relaxed text-body">
             Content on this platform is reference and training material and is not legal or regulatory advice. Always consult the official source. If
-            you have questions about your data or would like it removed, contact an administrator through the Community section.
+            you have questions about your data, contact an administrator through the Community section. To delete your account and personal data, see{" "}
+            <Link href="/account-deletion" className="text-accent hover:underline">
+              Delete your account
+            </Link>
+            .
           </p>
         </Panel>
       </div>
