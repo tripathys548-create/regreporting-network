@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.webelvate.regworld",
+      "sha256_cert_fingerprints": [
+        "B5:8A:DD:F7:72:D0:CA:CC:17:C6:91:44:21:DA:B9:24:11:96:75:D9:B4:6B:F8:FA:57:08:F6:39:06:38:3A:65"
+      ]
+    }
+  }
+]
